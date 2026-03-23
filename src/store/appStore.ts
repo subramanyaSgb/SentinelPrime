@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import type { AppView, AIProviderType } from '@/types'
+import { v4 as uuidv4 } from 'uuid'
 
 /**
  * Globe layer visibility state.
@@ -19,6 +20,15 @@ export interface GlobeLayerVisibility {
 }
 
 export type GlobeLayerKey = keyof GlobeLayerVisibility
+
+export type ToastSeverity = 'low' | 'medium' | 'high' | 'critical'
+
+export interface Toast {
+  id: string
+  message: string
+  severity: ToastSeverity
+  createdAt: Date
+}
 
 const DEFAULT_LAYER_VISIBILITY: GlobeLayerVisibility = {
   targetMarkers: true,
@@ -72,6 +82,11 @@ interface AppState {
   toggleGlobeLayer: (layer: GlobeLayerKey) => void
   setGlobeLayerVisible: (layer: GlobeLayerKey, visible: boolean) => void
   resetGlobeLayers: () => void
+
+  // Toast notifications
+  toasts: Toast[]
+  addToast: (message: string, severity: ToastSeverity) => void
+  removeToast: (id: string) => void
 }
 
 export const useAppStore = create<AppState>()((set) => ({
@@ -127,4 +142,20 @@ export const useAppStore = create<AppState>()((set) => ({
       },
     })),
   resetGlobeLayers: () => set({ globeLayers: { ...DEFAULT_LAYER_VISIBILITY } }),
+
+  // Toast notifications
+  toasts: [],
+  addToast: (message, severity) => {
+    const toast: Toast = {
+      id: uuidv4(),
+      message,
+      severity,
+      createdAt: new Date(),
+    }
+    set((state) => ({ toasts: [...state.toasts, toast] }))
+  },
+  removeToast: (id) =>
+    set((state) => ({
+      toasts: state.toasts.filter((t) => t.id !== id),
+    })),
 }))

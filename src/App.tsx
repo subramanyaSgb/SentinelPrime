@@ -3,7 +3,7 @@ import { useAppStore } from '@/store/appStore'
 import { useTargetStore } from '@/store/targetStore'
 import { useAlertStore } from '@/store/alertStore'
 import { useSettingsStore } from '@/store/settingsStore'
-import { ScanlineOverlay, CRTVignette, NoiseOverlay } from '@/components/ui'
+import { ScanlineOverlay, CRTVignette, NoiseOverlay, CommandPalette, AlertToast } from '@/components/ui'
 import { Header } from '@/components/hud/Header'
 import { Footer } from '@/components/hud/Footer'
 import { LeftPanel } from '@/components/panels/LeftPanel'
@@ -11,6 +11,7 @@ import { RightPanel, RightPanelToggle } from '@/components/panels/RightPanel'
 import { CenterContent } from '@/components/panels/CenterContent'
 import { BootSequence } from '@/components/hud/BootSequence'
 import { PWAInstallPrompt } from '@/components/hud/PWAInstallPrompt'
+import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts'
 
 function App() {
   const bootComplete = useAppStore((s) => s.bootComplete)
@@ -19,6 +20,9 @@ function App() {
   const loadAlerts = useAlertStore((s) => s.loadAlerts)
   const loadSettings = useSettingsStore((s) => s.loadSettings)
   const display = useSettingsStore((s) => s.display)
+
+  // Register global keyboard shortcuts
+  useKeyboardShortcuts()
 
   // Load data from IndexedDB and settings on mount
   useEffect(() => {
@@ -73,6 +77,12 @@ function App() {
       {display.scanlines && <ScanlineOverlay />}
       {display.crtVignette && <CRTVignette />}
       {display.noiseOverlay && <NoiseOverlay />}
+
+      {/* Command Palette — Ctrl+K / Cmd+K */}
+      <CommandPalette />
+
+      {/* Toast Notifications */}
+      <AlertToast />
 
       {/* PWA Install Banner */}
       <PWAInstallPrompt />

@@ -14,6 +14,7 @@ import { IPToMap } from './domain/IPToMap'
 import { PhishingAnalyzer } from './domain/PhishingAnalyzer'
 import { GoogleDorkBuilder } from './social/GoogleDorkBuilder'
 import { WaybackCrawler } from './social/WaybackCrawler'
+import { GenericModuleExecutor } from './GenericModuleExecutor'
 
 /**
  * ToolsView — Container for the Tool Registry.
@@ -75,6 +76,8 @@ export function ToolsView() {
 
           {ModuleComponent ? (
             <ModuleComponent />
+          ) : moduleSpec ? (
+            <GenericModuleExecutor spec={moduleSpec} />
           ) : (
             <div
               style={{
@@ -86,11 +89,8 @@ export function ToolsView() {
               className="corner-brackets"
             >
               <div style={{ fontSize: '14px', color: 'var(--phosphor-dim)', marginBottom: '8px' }}>◇</div>
-              <div style={{ fontSize: '11px', color: 'var(--phosphor-dim)', textTransform: 'uppercase', marginBottom: '4px' }}>
-                {moduleSpec?.name ?? 'UNKNOWN MODULE'}
-              </div>
-              <div style={{ fontSize: '10px', color: 'var(--phosphor-dim)', opacity: 0.5, textTransform: 'uppercase' }}>
-                MODULE PENDING IMPLEMENTATION // PHASE 4+
+              <div style={{ fontSize: '11px', color: 'var(--phosphor-dim)', textTransform: 'uppercase' }}>
+                UNKNOWN MODULE
               </div>
             </div>
           )}
@@ -114,7 +114,7 @@ export function ToolsView() {
           style={{ fontSize: '10px', color: 'var(--phosphor-dim)', textTransform: 'uppercase', marginBottom: '16px' }}
         >
           {MODULE_REGISTRY.length} MODULES // {categories.length} CATEGORIES //
-          {' '}{Object.keys(MODULE_COMPONENTS).length} ACTIVE
+          {' '}{MODULE_REGISTRY.length} ACTIVE
         </div>
 
         <Separator />
@@ -179,7 +179,7 @@ export function ToolsView() {
               <ModuleListItem
                 key={mod.id}
                 spec={mod}
-                isActive={mod.id in MODULE_COMPONENTS}
+                isActive={true}
                 onClick={() => handleSelectModule(mod.id)}
               />
             ))

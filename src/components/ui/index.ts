@@ -11,3 +11,5 @@ export { Label, Value, Separator, Timestamp, MetaRow, DataField } from './Displa
 export { ErrorDisplay, RateLimitDisplay } from './ErrorDisplay'
 export { ScanlineOverlay, CRTVignette, NoiseOverlay, CriticalPulse } from './Overlays'
 export { Loading, AIThinking, ScanningCursor } from './Loading'
+export { CommandPalette } from './CommandPalette'
+export { AlertToast } from './AlertToast'

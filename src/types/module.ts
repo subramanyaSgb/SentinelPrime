@@ -1,5 +1,5 @@
-export type InputType = 'text' | 'email' | 'url' | 'phone' | 'ip' | 'file' | 'coordinates'
-export type DataSourceType = 'free_api' | 'paid_api' | 'ai_only' | 'link_out' | 'scrape'
+export type InputType = 'text' | 'email' | 'url' | 'phone' | 'ip' | 'file' | 'coordinates' | 'textarea' | 'select' | 'domain'
+export type DataSourceType = 'free_api' | 'paid_api' | 'ai_only' | 'link_out' | 'scrape' | 'local'
 export type OutputType = 'text' | 'json' | 'map' | 'graph' | 'table' | 'image' | 'mixed'
 
 export interface ModuleInput {
