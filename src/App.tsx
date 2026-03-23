@@ -9,6 +9,7 @@ import { Footer } from '@/components/hud/Footer'
 import { LeftPanel } from '@/components/panels/LeftPanel'
 import { RightPanel, RightPanelToggle } from '@/components/panels/RightPanel'
 import { CenterContent } from '@/components/panels/CenterContent'
+import { BootSequence } from '@/components/hud/BootSequence'
 
 function App() {
   const bootComplete = useAppStore((s) => s.bootComplete)
@@ -25,22 +26,40 @@ function App() {
     loadSettings()
   }, [loadTargets, loadAlerts, loadSettings])
 
-  // Boot sequence check
+  // Boot sequence check — skip if already booted this session or disabled in settings
   useEffect(() => {
     const skipBoot = sessionStorage.getItem('sp-boot-done') === '1'
     if (skipBoot) {
       setBootComplete(true)
+      return
+    }
+
+    // Check if boot sequence is disabled in settings
+    try {
+      const raw = localStorage.getItem('sp-settings')
+      if (raw) {
+        const settings = JSON.parse(raw) as { display?: { bootSequence?: boolean } }
+        if (settings.display?.bootSequence === false) {
+          setBootComplete(true)
+          sessionStorage.setItem('sp-boot-done', '1')
+        }
+      }
+    } catch {
+      // Settings parse failed — proceed with boot
     }
   }, [setBootComplete])
 
   if (!bootComplete) {
     return (
-      <BootPlaceholder
-        onComplete={() => {
-          setBootComplete(true)
-          sessionStorage.setItem('sp-boot-done', '1')
-        }}
-      />
+      <>
+        {display.scanlines && <ScanlineOverlay />}
+        <BootSequence
+          onComplete={() => {
+            setBootComplete(true)
+            sessionStorage.setItem('sp-boot-done', '1')
+          }}
+        />
+      </>
     )
   }
 
@@ -67,33 +86,6 @@ function App() {
 
       {/* HUD Footer / Status Bar */}
       <Footer />
-    </div>
-  )
-}
-
-/** Minimal boot placeholder — full boot sequence in Phase 0.9 */
-function BootPlaceholder({ onComplete }: { onComplete: () => void }) {
-  useEffect(() => {
-    const timer = setTimeout(onComplete, 1500)
-    return () => clearTimeout(timer)
-  }, [onComplete])
-
-  return (
-    <div
-      className="h-screen w-screen flex items-center justify-center"
-      style={{ background: 'var(--bg-void)' }}
-    >
-      <div style={{ color: 'var(--phosphor)', fontSize: '12px' }} className="text-glow">
-        <div>SENTINEL//PRIME INTELLIGENCE PLATFORM v0.1.0</div>
-        <div style={{ color: 'var(--phosphor-dim)', marginTop: '8px' }}>
-          INITIALIZING CORE SYSTEMS...
-        </div>
-        <div style={{ marginTop: '12px' }}>
-          <span className="cursor-blink" style={{ color: 'var(--phosphor)' }}>
-            LOADING
-          </span>
-        </div>
-      </div>
     </div>
   )
 }

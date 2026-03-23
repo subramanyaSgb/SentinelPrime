@@ -1,5 +1,42 @@
 # SentinelPrime Changelog
 
+## [0.5.0] — 2026-03-23
+
+### Module: BOOT_SEQUENCE
+**Status:** 🧪 TESTING
+
+#### Files Created:
+- `src/components/hud/BootSequence.tsx` — Full terminal boot animation per PRD Section 6.9: 2.5s duration, 5 sequential progress bars with animated fill (requestAnimationFrame), ASCII block characters (████░░), phase-based rendering (title → subtitle → steps → complete), skip on any key/click, auto-proceed fallback timer, "ALL SYSTEMS NOMINAL. WELCOME, OPERATOR." final message, "PRESS ANY KEY TO SKIP" hint
+
+#### Files Modified:
+- `src/App.tsx` — Replaced BootPlaceholder with BootSequence component, added boot sequence skip logic (checks sessionStorage for previous boot + localStorage for display.bootSequence setting), scanline overlay renders during boot for immersive effect
+
+#### Decisions Made:
+- Used requestAnimationFrame for smooth progress bar animation (60fps)
+- Each boot step has individual timing (350-450ms) for visual variety
+- useRef for completion guard prevents double-fire of onComplete
+- AbortController pattern via useRef for animation frame cleanup
+- Boot sequence respects Settings > Display > Boot Sequence toggle
+- localStorage checked directly in useEffect (before settingsStore loads) to avoid flash
+- Scanline overlay shows during boot for CRT terminal feel
+- "PRESS ANY KEY TO SKIP" shown at bottom during animation phases
+- Auto-complete timeout (3.5s) as safety fallback
+
+#### Tests Passed:
+- [x] TypeScript: all types correct, no unused variables
+- [x] No console.log statements
+- [x] All colors use CSS variables
+- [x] Proper cleanup: clearTimeout, cancelAnimationFrame in all useEffects
+- [x] useRef guard prevents double onComplete calls
+- [x] Removed unused constant (STEPS_START_DELAY)
+- [x] Removed reference to non-existent CSS keyframe (bootFadeIn)
+- [x] Event listeners properly cleaned up on unmount
+
+#### Known Issues:
+- Cannot verify runtime rendering in sandbox — user must test locally
+
+---
+
 ## [0.4.0] — 2026-03-23
 
 ### Module: SETTINGS_PAGE
