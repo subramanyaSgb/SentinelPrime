@@ -1,0 +1,408 @@
+/* ═══════════════════════════════════════════════════════════════
+   PHANTOM GRID — SentinelPrime Design System
+   Tactical Military HUD Terminal Aesthetic
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── CSS Custom Properties ── */
+:root {
+  /* Backgrounds */
+  --bg-void: #020802;
+  --bg-deep: #030C03;
+  --bg-panel: #051005;
+  --bg-card: #071407;
+  --bg-overlay: rgba(0, 255, 65, 0.03);
+
+  /* Phosphor Green — Primary */
+  --phosphor: #00FF41;
+  --phosphor-dim: #00AA2B;
+  --phosphor-faint: rgba(0, 255, 65, 0.15);
+  --phosphor-glow: rgba(0, 255, 65, 0.4);
+
+  /* Warning — Amber */
+  --amber: #FFB700;
+  --amber-dim: rgba(255, 183, 0, 0.6);
+
+  /* Critical — Red */
+  --red-critical: #FF2020;
+  --red-dim: rgba(255, 32, 32, 0.5);
+
+  /* Data */
+  --white-data: rgba(200, 255, 200, 0.9);
+
+  /* Effects */
+  --scanline-opacity: 0.12;
+  --noise-opacity: 0.04;
+
+  /* Typography */
+  --font-mono: 'Share Tech Mono', monospace;
+
+  /* Sizes */
+  --header-height: 48px;
+  --footer-height: 32px;
+  --left-panel-width: 280px;
+  --left-panel-collapsed: 48px;
+  --right-panel-width: 360px;
+}
+
+/* ── Base Reset ── */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: 12px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  font-family: var(--font-mono);
+  background-color: var(--bg-void);
+  color: var(--phosphor-dim);
+  overflow: hidden;
+  min-height: 100vh;
+  line-height: 1.5;
+}
+
+#root {
+  min-height: 100vh;
+  position: relative;
+}
+
+/* ── Selection ── */
+::selection {
+  background: var(--phosphor-faint);
+  color: var(--phosphor);
+}
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-deep);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--phosphor-faint);
+  border-radius: 0;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--phosphor-dim);
+}
+
+/* ── Global Text Glow ── */
+.text-glow {
+  text-shadow: 0 0 8px var(--phosphor-glow);
+}
+
+.text-glow-amber {
+  text-shadow: 0 0 8px var(--amber-dim);
+}
+
+.text-glow-red {
+  text-shadow: 0 0 8px var(--red-dim);
+}
+
+/* ── Scanline Overlay ── */
+.scanline-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 9999;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 0, 0, var(--scanline-opacity)) 2px,
+    rgba(0, 0, 0, var(--scanline-opacity)) 4px
+  );
+}
+
+/* ── CRT Vignette ── */
+.crt-vignette {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 9998;
+  background: radial-gradient(
+    ellipse at center,
+    transparent 60%,
+    rgba(0, 0, 0, 0.2) 100%
+  );
+}
+
+/* ── Noise/Grain SVG Filter ── */
+.noise-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 9997;
+  opacity: var(--noise-opacity);
+}
+
+/* ── Corner Brackets ── */
+.corner-brackets {
+  position: relative;
+}
+
+.corner-brackets::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 12px;
+  height: 12px;
+  border-top: 1px solid var(--phosphor-faint);
+  border-left: 1px solid var(--phosphor-faint);
+}
+
+.corner-brackets::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 12px;
+  height: 12px;
+  border-top: 1px solid var(--phosphor-faint);
+  border-right: 1px solid var(--phosphor-faint);
+}
+
+.corner-brackets-bottom {
+  position: relative;
+}
+
+.corner-brackets-bottom::before {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 12px;
+  height: 12px;
+  border-bottom: 1px solid var(--phosphor-faint);
+  border-left: 1px solid var(--phosphor-faint);
+}
+
+.corner-brackets-bottom::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 12px;
+  height: 12px;
+  border-bottom: 1px solid var(--phosphor-faint);
+  border-right: 1px solid var(--phosphor-faint);
+}
+
+/* ── Panel Base ── */
+.phantom-panel {
+  background: var(--bg-panel);
+  border: 1px solid var(--phosphor-faint);
+  position: relative;
+}
+
+.phantom-panel.active {
+  border-color: var(--phosphor);
+}
+
+/* ── Card Base ── */
+.phantom-card {
+  background: var(--bg-card);
+  border: 1px solid var(--phosphor-faint);
+  padding: 12px;
+  position: relative;
+}
+
+/* ── Input Base ── */
+.phantom-input {
+  background: var(--bg-card);
+  border: 1px solid var(--phosphor-faint);
+  color: var(--phosphor);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  padding: 8px 12px;
+  outline: none;
+  width: 100%;
+  transition: border-color 0.2s ease;
+}
+
+.phantom-input:focus {
+  border-color: var(--phosphor);
+  box-shadow: 0 0 8px var(--phosphor-glow);
+}
+
+.phantom-input::placeholder {
+  color: var(--phosphor-dim);
+  opacity: 0.5;
+}
+
+/* ── Button Base ── */
+.phantom-btn {
+  background: transparent;
+  border: 1px solid var(--phosphor-faint);
+  color: var(--phosphor);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: 6px 16px;
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  transition: all 0.15s ease;
+}
+
+.phantom-btn:hover {
+  background: var(--bg-overlay);
+  border-color: var(--phosphor);
+  color: #ffffff;
+  text-shadow: 0 0 8px var(--phosphor-glow);
+}
+
+.phantom-btn:active {
+  filter: invert(1);
+  transition: filter 0.01s;
+}
+
+.phantom-btn.primary {
+  background: var(--phosphor-faint);
+  border-color: var(--phosphor-dim);
+}
+
+.phantom-btn.danger {
+  border-color: var(--red-dim);
+  color: var(--red-critical);
+}
+
+.phantom-btn.danger:hover {
+  background: rgba(255, 32, 32, 0.1);
+  border-color: var(--red-critical);
+}
+
+/* ── Status Indicators ── */
+.status-online {
+  color: var(--phosphor);
+  animation: pulse-dot 2s infinite;
+}
+
+.status-degraded {
+  color: var(--amber);
+  animation: pulse-dot 2s infinite;
+}
+
+.status-offline {
+  color: var(--red-critical);
+}
+
+.status-unused {
+  color: var(--phosphor-dim);
+  opacity: 0.3;
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+/* ── Cursor Blink ── */
+.cursor-blink::after {
+  content: '_';
+  animation: blink-cursor 1s step-end infinite;
+}
+
+@keyframes blink-cursor {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+/* ── Typewriter Animation ── */
+@keyframes typewriter {
+  from { width: 0; }
+  to { width: 100%; }
+}
+
+/* ── Glitch Effect ── */
+@keyframes glitch {
+  0%, 100% { transform: translate(0); filter: none; }
+  20% { transform: translate(-2px, 1px); filter: hue-rotate(90deg); }
+  40% { transform: translate(2px, -1px); filter: hue-rotate(180deg); }
+  60% { transform: translate(-1px, -2px); filter: hue-rotate(270deg); }
+  80% { transform: translate(1px, 2px); filter: hue-rotate(360deg); }
+}
+
+.glitch-effect {
+  animation: glitch 0.3s ease-in-out 3;
+}
+
+/* ── Separator ── */
+.phantom-separator {
+  border: none;
+  border-top: 1px solid var(--phosphor-faint);
+  margin: 8px 0;
+}
+
+/* ── Labels ── */
+.phantom-label {
+  font-size: 10px;
+  color: var(--phosphor-dim);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+/* ── Data Values ── */
+.phantom-value {
+  font-size: 13px;
+  color: var(--white-data);
+}
+
+/* ── ASCII Progress Bar ── */
+.progress-ascii {
+  font-family: var(--font-mono);
+  color: var(--phosphor);
+  font-size: 12px;
+}
+
+/* ── Critical Alert Pulse ── */
+@keyframes criticalPulse {
+  0% { opacity: 0.8; }
+  100% { opacity: 0; }
+}
+
+/* ── API Error Static ── */
+@keyframes errorStatic {
+  0%, 100% { opacity: var(--scanline-opacity); }
+  50% { opacity: 0.35; }
+}
+
+.error-static .scanline-overlay {
+  animation: errorStatic 0.15s ease-in-out 3;
+}
+
+/* ── Amber Flash ── */
+@keyframes amberFlash {
+  0%, 100% { box-shadow: none; }
+  50% { box-shadow: inset 0 0 30px var(--amber-dim); }
+}
+
+.amber-flash {
+  animation: amberFlash 0.3s ease-in-out;
+}
+
+/* ── Tailwind Directives ── */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
