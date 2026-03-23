@@ -1,6 +1,7 @@
 import { useAppStore } from '@/store/appStore'
 import { SettingsView } from '@/components/settings'
 import { GlobeLoader } from '@/components/globe'
+import { TargetsView } from '@/components/target'
 import type { AppView } from '@/types'
 
 /**
@@ -19,6 +20,10 @@ export function CenterContent() {
         <GlobeLoader />
       ) : currentView === 'settings' ? (
         <SettingsView />
+      ) : currentView === 'targets' ? (
+        <TargetsView initialView="list" />
+      ) : currentView === 'target-detail' ? (
+        <TargetsView initialView="detail" />
       ) : (
         <ViewPlaceholder view={currentView} />
       )}

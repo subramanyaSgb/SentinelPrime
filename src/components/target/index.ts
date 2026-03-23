@@ -1,0 +1,10 @@
+// Target Manager — Barrel Export
+export { TargetsView } from './TargetsView'
+export { TargetCreateForm } from './TargetCreateForm'
+export { TargetListView } from './TargetListView'
+export { TargetDetailView } from './TargetDetailView'
+export { TargetEditForm } from './TargetEditForm'
+export { ThreatScoreDisplay } from './ThreatScoreDisplay'
+export { TargetStatusManager } from './TargetStatusManager'
+export { TargetExport } from './TargetExport'
+export { TargetMerge } from './TargetMerge'
