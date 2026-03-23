@@ -10,6 +10,7 @@ import { LeftPanel } from '@/components/panels/LeftPanel'
 import { RightPanel, RightPanelToggle } from '@/components/panels/RightPanel'
 import { CenterContent } from '@/components/panels/CenterContent'
 import { BootSequence } from '@/components/hud/BootSequence'
+import { PWAInstallPrompt } from '@/components/hud/PWAInstallPrompt'
 
 function App() {
   const bootComplete = useAppStore((s) => s.bootComplete)
@@ -72,6 +73,9 @@ function App() {
       {display.scanlines && <ScanlineOverlay />}
       {display.crtVignette && <CRTVignette />}
       {display.noiseOverlay && <NoiseOverlay />}
+
+      {/* PWA Install Banner */}
+      <PWAInstallPrompt />
 
       {/* HUD Header */}
       <Header />

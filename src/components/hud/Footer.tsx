@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useAppStore } from '@/store/appStore'
 import { useTargetStore } from '@/store/targetStore'
 import { useAlertStore } from '@/store/alertStore'
+import { useOnlineStatus } from '@/hooks/useOnlineStatus'
 
 /**
  * PHANTOM GRID Footer Status Bar — always visible bottom bar.
@@ -14,6 +15,7 @@ export function Footer() {
   const targets = useTargetStore((s) => s.targets)
   const unreadCount = useAlertStore((s) => s.unreadCount)
   const activeTargetCount = targets.filter((t) => t.status === 'active').length
+  const isOnline = useOnlineStatus()
 
   return (
     <footer
@@ -36,6 +38,13 @@ export function Footer() {
           ⚠ ALERTS: {unreadCount} NEW
         </span>
         <span>API: ○○○○ 0/4 ONLINE</span>
+        <span
+          style={{
+            color: isOnline ? 'var(--phosphor)' : 'var(--red-critical)',
+          }}
+        >
+          {isOnline ? '● NETWORK: ONLINE' : '● NETWORK: OFFLINE'}
+        </span>
       </div>
       <div className="flex items-center gap-4">
         <UptimeCounter />

@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>SentinelPrime Icon Generator</title>
+  <style>
+    body { background: #020802; color: #00FF41; font-family: monospace; padding: 40px; }
+    canvas { border: 1px solid #00FF41; margin: 10px; }
+    a { color: #00FF41; display: block; margin: 8px 0; }
+  </style>
+</head>
+<body>
+  <h2>SENTINELPRIME // PWA ICON GENERATOR</h2>
+  <p>Right-click each canvas and "Save Image As" to save the PNG files:</p>
+  <p>Save as: <code>public/icons/icon-192.png</code> and <code>public/icons/icon-512.png</code></p>
+  <div id="output"></div>
+  <script>
+    const sizes = [192, 512];
+
+    sizes.forEach(size => {
+      const canvas = document.createElement('canvas');
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext('2d');
+      const cx = size / 2;
+      const cy = size / 2;
+
+      // Background
+      ctx.fillStyle = '#020802';
+      ctx.fillRect(0, 0, size, size);
+
+      // Radar rings
+      const rings = [0.39, 0.29, 0.19, 0.097];
+      const opacities = [0.2, 0.3, 0.4, 0.5];
+      rings.forEach((r, i) => {
+        ctx.beginPath();
+        ctx.arc(cx, cy, size * r, 0, Math.PI * 2);
+        ctx.strokeStyle = `rgba(0, 255, 65, ${opacities[i]})`;
+        ctx.lineWidth = size > 200 ? 3 : 2;
+        ctx.stroke();
+      });
+
+      // Center dot
+      ctx.beginPath();
+      ctx.arc(cx, cy, size * 0.023, 0, Math.PI * 2);
+      ctx.fillStyle = '#00FF41';
+      ctx.fill();
+
+      // Crosshairs
+      const lineWidth = size > 200 ? 3 : 2;
+      const gap = size * 0.07;
+      const lineLen = size * 0.137;
+      ctx.strokeStyle = 'rgba(0, 255, 65, 0.5)';
+      ctx.lineWidth = lineWidth;
+
+      // Top
+      ctx.beginPath(); ctx.moveTo(cx, gap); ctx.lineTo(cx, gap + lineLen); ctx.stroke();
+      // Bottom
+      ctx.beginPath(); ctx.moveTo(cx, size - gap); ctx.lineTo(cx, size - gap - lineLen); ctx.stroke();
+      // Left
+      ctx.beginPath(); ctx.moveTo(gap, cy); ctx.lineTo(gap + lineLen, cy); ctx.stroke();
+      // Right
+      ctx.beginPath(); ctx.moveTo(size - gap, cy); ctx.lineTo(size - gap - lineLen, cy); ctx.stroke();
+
+      // Corner brackets
+      const cb = size * 0.109;
+      const cbLen = size * 0.078;
+      ctx.strokeStyle = 'rgba(0, 255, 65, 0.4)';
+      // TL
+      ctx.beginPath(); ctx.moveTo(cb, cb); ctx.lineTo(cb, cb + cbLen); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(cb, cb); ctx.lineTo(cb + cbLen, cb); ctx.stroke();
+      // TR
+      ctx.beginPath(); ctx.moveTo(size - cb, cb); ctx.lineTo(size - cb, cb + cbLen); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(size - cb, cb); ctx.lineTo(size - cb - cbLen, cb); ctx.stroke();
+      // BL
+      ctx.beginPath(); ctx.moveTo(cb, size - cb); ctx.lineTo(cb, size - cb - cbLen); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(cb, size - cb); ctx.lineTo(cb + cbLen, size - cb); ctx.stroke();
+      // BR
+      ctx.beginPath(); ctx.moveTo(size - cb, size - cb); ctx.lineTo(size - cb, size - cb - cbLen); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(size - cb, size - cb); ctx.lineTo(size - cb - cbLen, size - cb); ctx.stroke();
+
+      // "SP" text
+      ctx.fillStyle = 'rgba(0, 255, 65, 0.8)';
+      ctx.font = `bold ${size * 0.125}px monospace`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('SP', cx, cy);
+
+      // Add to page
+      const label = document.createElement('p');
+      label.textContent = `icon-${size}.png (${size}x${size})`;
+      document.getElementById('output').appendChild(label);
+      document.getElementById('output').appendChild(canvas);
+
+      // Download link
+      const link = document.createElement('a');
+      link.download = `icon-${size}.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.textContent = `Download icon-${size}.png`;
+      document.getElementById('output').appendChild(link);
+    });
+  </script>
+</body>
+</html>

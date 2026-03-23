@@ -1,9 +1,56 @@
 # SentinelPrime Changelog
 
+## [0.6.0] — 2026-03-23
+
+### Module: PWA_MANIFEST_SERVICE_WORKER
+**Status:** 🧪 TESTING
+
+#### Files Created:
+- `public/icons/icon-192.svg` — 192x192 PWA icon: tactical crosshair with radar rings, corner brackets, "SP" text, PHANTOM GRID colors
+- `public/icons/icon-512.svg` — 512x512 PWA icon: same design scaled up with additional detail ring
+- `scripts/generate-icons.html` — Browser-based icon generator: opens in browser, renders icons via canvas, provides download links for PNG versions
+- `src/hooks/usePWAInstall.ts` — PWA install prompt hook: captures beforeinstallprompt event, tracks install state, provides promptInstall() and dismissInstall() functions, checks display-mode standalone
+- `src/hooks/useOnlineStatus.ts` — Network status hook: tracks navigator.onLine, listens to online/offline events, returns reactive boolean
+- `src/components/hud/PWAInstallPrompt.tsx` — Install banner: slim top bar with PHANTOM GRID styling, "INSTALL SENTINELPRIME AS DESKTOP APPLICATION", Install/Dismiss buttons, auto-hides when installed or dismissed
+
+#### Files Modified:
+- `vite.config.ts` — Enhanced PWA manifest: added SVG icons alongside PNG, scope, categories, navigateFallback for offline shell, runtime caching for external APIs (NetworkFirst with 10s timeout), OSINT API caching (NetworkFirst, 7-day expiry), renamed cache names with "sp-" prefix
+- `index.html` — Added full PWA meta tags: application-name, mobile-web-app-capable, apple-mobile-web-app-title, apple-touch-icon, msapplication-TileColor, multiple icon links (192/512 SVG)
+- `src/App.tsx` — Added PWAInstallPrompt component above Header
+- `src/components/hud/Footer.tsx` — Added network status indicator using useOnlineStatus hook: "● NETWORK: ONLINE" (green) / "● NETWORK: OFFLINE" (red)
+
+#### Decisions Made:
+- SVG icons as primary (scalable, no build step), PNG as fallback (generated via browser script)
+- Icon design: tactical crosshair with radar rings + "SP" initials — matches PHANTOM GRID aesthetic
+- PWA install prompt uses sessionStorage for dismiss persistence (resets per session, not permanent)
+- Service worker uses Workbox via vite-plugin-pwa (no custom SW file needed)
+- Runtime caching: CacheFirst for fonts (immutable), NetworkFirst for APIs (freshness matters)
+- OSINT API responses cached for 7 days (investigation data should be reproducible)
+- navigateFallback: index.html ensures app shell loads offline per PRD 14.2
+- Network status in footer gives immediate visual feedback for offline state
+
+#### Tests Passed:
+- [x] TypeScript: all types correct, no `any` usage
+- [x] No console.log statements
+- [x] All CSS uses variables
+- [x] PWA manifest has all required fields (name, short_name, icons, display, theme_color, background_color)
+- [x] Icon SVGs render correctly (valid SVG markup)
+- [x] usePWAInstall properly cleans up event listeners
+- [x] useOnlineStatus properly cleans up event listeners
+- [x] vite.config.ts valid configuration (no syntax errors)
+- [x] index.html valid HTML5 with all PWA meta tags
+
+#### Known Issues:
+- PNG icons not yet generated — user must open scripts/generate-icons.html in browser to create them
+- Cannot verify Lighthouse PWA score in sandbox — user must test locally
+- beforeinstallprompt only fires in Chromium browsers (Firefox/Safari require manual install)
+
+---
+
 ## [0.5.0] — 2026-03-23
 
 ### Module: BOOT_SEQUENCE
-**Status:** 🧪 TESTING
+**Status:** ✅ USER APPROVED
 
 #### Files Created:
 - `src/components/hud/BootSequence.tsx` — Full terminal boot animation per PRD Section 6.9: 2.5s duration, 5 sequential progress bars with animated fill (requestAnimationFrame), ASCII block characters (████░░), phase-based rendering (title → subtitle → steps → complete), skip on any key/click, auto-proceed fallback timer, "ALL SYSTEMS NOMINAL. WELCOME, OPERATOR." final message, "PRESS ANY KEY TO SKIP" hint

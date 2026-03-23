@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <rect width="512" height="512" fill="#020802"/>
+  <!-- Outer radar ring -->
+  <circle cx="256" cy="256" r="200" fill="none" stroke="#00FF41" stroke-width="3" opacity="0.2"/>
+  <!-- Second ring -->
+  <circle cx="256" cy="256" r="150" fill="none" stroke="#00FF41" stroke-width="2" opacity="0.3"/>
+  <!-- Mid ring -->
+  <circle cx="256" cy="256" r="100" fill="none" stroke="#00FF41" stroke-width="2" opacity="0.4"/>
+  <!-- Inner ring -->
+  <circle cx="256" cy="256" r="50" fill="none" stroke="#00FF41" stroke-width="2" opacity="0.5"/>
+  <!-- Center dot -->
+  <circle cx="256" cy="256" r="12" fill="#00FF41"/>
+  <!-- Crosshair lines -->
+  <line x1="256" y1="36" x2="256" y2="106" stroke="#00FF41" stroke-width="3" opacity="0.5"/>
+  <line x1="256" y1="406" x2="256" y2="476" stroke="#00FF41" stroke-width="3" opacity="0.5"/>
+  <line x1="36" y1="256" x2="106" y2="256" stroke="#00FF41" stroke-width="3" opacity="0.5"/>
+  <line x1="406" y1="256" x2="476" y2="256" stroke="#00FF41" stroke-width="3" opacity="0.5"/>
+  <!-- Corner brackets -->
+  <path d="M56,56 L56,96 M56,56 L96,56" fill="none" stroke="#00FF41" stroke-width="3" opacity="0.4"/>
+  <path d="M456,56 L456,96 M456,56 L416,56" fill="none" stroke="#00FF41" stroke-width="3" opacity="0.4"/>
+  <path d="M56,456 L56,416 M56,456 L96,456" fill="none" stroke="#00FF41" stroke-width="3" opacity="0.4"/>
+  <path d="M456,456 L456,416 M456,456 L416,456" fill="none" stroke="#00FF41" stroke-width="3" opacity="0.4"/>
+  <!-- "SP" text -->
+  <text x="256" y="276" text-anchor="middle" font-family="monospace" font-size="64" font-weight="bold" fill="#00FF41" opacity="0.8">SP</text>
+</svg>
