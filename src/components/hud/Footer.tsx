@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useAppStore } from '@/store/appStore'
 import { useTargetStore } from '@/store/targetStore'
 import { useAlertStore } from '@/store/alertStore'
+import { useSettingsStore } from '@/store/settingsStore'
 import { useOnlineStatus } from '@/hooks/useOnlineStatus'
 
 /**
@@ -16,6 +17,16 @@ export function Footer() {
   const unreadCount = useAlertStore((s) => s.unreadCount)
   const activeTargetCount = targets.filter((t) => t.status === 'active').length
   const isOnline = useOnlineStatus()
+  const providerConfigs = useSettingsStore((s) => s.providers)
+
+  // Count providers by status
+  const validCount = providerConfigs.filter((p) => p.status === 'valid').length
+  const totalProviders = providerConfigs.length
+
+  // Build status dots: ● for valid, ○ for others
+  const statusDots = providerConfigs
+    .map((p) => (p.status === 'valid' ? '●' : '○'))
+    .join('')
 
   return (
     <footer
@@ -37,7 +48,13 @@ export function Footer() {
         >
           ⚠ ALERTS: {unreadCount} NEW
         </span>
-        <span>API: ○○○○ 0/4 ONLINE</span>
+        <span
+          style={{
+            color: validCount > 0 ? 'var(--phosphor)' : 'var(--phosphor-dim)',
+          }}
+        >
+          API: {statusDots} {validCount}/{totalProviders} ONLINE
+        </span>
         <span
           style={{
             color: isOnline ? 'var(--phosphor)' : 'var(--red-critical)',

@@ -403,6 +403,12 @@ body {
   animation: amberFlash 0.3s ease-in-out;
 }
 
+/* ── Radar Sweep ── */
+@keyframes radarSweepRotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
 /* ── Tailwind Directives ── */
 @tailwind base;
 @tailwind components;

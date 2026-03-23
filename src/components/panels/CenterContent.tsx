@@ -1,5 +1,6 @@
 import { useAppStore } from '@/store/appStore'
 import { SettingsView } from '@/components/settings'
+import { GlobeLoader } from '@/components/globe'
 import type { AppView } from '@/types'
 
 /**
@@ -14,7 +15,9 @@ export function CenterContent() {
       className="flex-1 flex flex-col overflow-hidden relative"
       style={{ background: 'var(--bg-void)' }}
     >
-      {currentView === 'settings' ? (
+      {currentView === 'dashboard' ? (
+        <GlobeLoader />
+      ) : currentView === 'settings' ? (
         <SettingsView />
       ) : (
         <ViewPlaceholder view={currentView} />

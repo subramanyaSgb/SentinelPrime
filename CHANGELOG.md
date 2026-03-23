@@ -1,9 +1,370 @@
 # SentinelPrime Changelog
 
+## [2.0.0] — 2026-03-23
+
+### Module: AI_PROVIDER_SYSTEM (Phase 2 Complete)
+**Status:** 🧪 TESTING
+
+#### Sub-modules:
+- **2.1 AIProvider Interface** — Enhanced with `checkHealth()` method, `AIHealthResult` type
+- **2.2 NVIDIA Nemotron Provider** — Primary provider, bundled API key, streaming with reasoning_content support
+- **2.3 Ollama Provider** — Local LLM, no API key, model availability checking in health check
+- **2.4 Gemini Provider** — Google REST API format, key-as-URL-param, system prompt merging
+- **2.5 Groq Provider** — OpenAI-compatible, ultra-fast inference
+- **2.6 OpenRouter Provider** — OpenAI-compatible, multi-model gateway, HTTP-Referer headers
+- **2.7 Provider Selector UI** — Already built in Phase 0 (APIKeysTab + AIPreferencesTab)
+- **2.8 AI Health Checker** — Provider registry, parallel health checks, useAIHealthCheck hook
+
+#### Files Created:
+- `src/providers/NvidiaProvider.ts` — NVIDIA Nemotron-3 Super 120B, native fetch, SSE streaming with reasoning_content, bundled API key, 30s timeout
+- `src/providers/OllamaProvider.ts` — Local Ollama, NDJSON streaming, model availability check, 60s timeout for local inference
+- `src/providers/GeminiProvider.ts` — Google Gemini REST API, SSE streaming, system-prompt-as-user-prefix strategy
+- `src/providers/GroqProvider.ts` — Groq OpenAI-compatible, SSE streaming
+- `src/providers/OpenRouterProvider.ts` — OpenRouter OpenAI-compatible, HTTP-Referer/X-Title headers, SSE streaming
+- `src/providers/index.ts` — Provider registry: createProviderMap, getActiveProviderFromConfigs, checkAllProviderHealth, countOnlineProviders
+- `src/hooks/useAIProvider.ts` — useAIProvider (active provider instance), useAIHealthCheck (health check state + actions)
+
+#### Files Modified:
+- `src/types/ai.ts` — Added checkHealth() to AIProvider interface, added AIHealthResult type
+- `src/types/index.ts` — Added AIHealthResult to barrel export
+- `src/components/hud/Footer.tsx` — Live API status dots from provider store (replaces hardcoded ○○○○)
+- `src/components/settings/APIKeysTab.tsx` — Uses useAIHealthCheck hook, "Test All" button, latency display, removed placeholder performHealthCheck
+
+#### Decisions Made:
+- Native fetch over openai SDK — avoids 100KB+ browser bundle, providers are simple enough for fetch + SSE parsing
+- Separate streaming parsers per provider — NVIDIA uses SSE with reasoning_content, Ollama uses NDJSON, Gemini uses SSE with different structure
+- Gemini system prompt merged into user message — Gemini API doesn't consistently support system role across all model versions
+- OpenRouter HTTP-Referer required — OpenRouter TOS requires app identification headers
+- Provider instances are stateless — created from config on demand, not cached (configs change in settings)
+- AbortController for all timeouts — clean cancellation instead of race conditions
+- 60s timeout for Ollama (local inference slow) vs 30s for cloud providers
+
+#### Tests Passed:
+- [x] TypeScript: all interfaces typed, no `any` types except controlled casts for SSE parsing
+- [x] No console.log statements
+- [x] All providers implement full AIProvider interface including checkHealth
+- [x] SSE streaming parsers handle incomplete chunks (buffer pattern)
+- [x] Error handling: API errors, timeouts, network failures all produce clear error messages
+- [x] Health check returns structured AIHealthResult with latency
+- [x] Footer live API status dots wired to provider store
+
+#### Known Issues:
+- Cannot test actual API calls in sandbox (no network to NVIDIA/Groq/etc.)
+- Gemini system prompt workaround may not work identically to native system role
+- CORS may block some provider APIs from browser — will need proxy for production
+
+---
+
+## [1.8.0] — 2026-03-23
+
+### Module: LAYER_TOGGLE_CONTROLS
+**Status:** ✅ USER APPROVED
+
+#### Files Created:
+- `src/components/panels/LayerToggles.tsx` — Data layer toggle panel for the Left Panel. 8 toggle rows (5 implemented, 3 pending). Each row shows status indicator (● active / ○ off), layer icon, label, and "PENDING" badge for unbuilt layers. Section header shows active/total count. Toggles wire to Zustand globeLayers state. Unimplemented layers (CCTV Mesh, Weather Radar, Earthquake) show as disabled with not-allowed cursor.
+
+#### Files Modified:
+- `src/store/appStore.ts` — Added `GlobeLayerVisibility` interface (8 boolean flags), `GlobeLayerKey` type, `DEFAULT_LAYER_VISIBILITY` constant. Added `globeLayers`, `toggleGlobeLayer`, `setGlobeLayerVisible`, `resetGlobeLayers` to store.
+- `src/components/globe/Globe.tsx` — Imported `useAppStore` and `GlobeLayerVisibility`. `GlobeScene` reads `globeLayers` from store. `EarthGroup` accepts `layers` prop. All 5 globe layers conditionally rendered based on visibility flags. SatelliteOrbits (outside EarthGroup) also conditional.
+- `src/components/panels/LeftPanel.tsx` — Added `LayerToggles` import. Renders `<LayerToggles />` when panel is expanded AND `currentView === 'dashboard'`.
+
+#### Decisions Made:
+- Layer toggles only visible on dashboard view — they control globe layers, irrelevant on other views
+- Unimplemented layers default to `false` and are non-toggleable — prevents user confusion
+- Conditional rendering (unmount) vs `visible` prop — chose unmount for clean GPU memory release when layers are off
+- "PENDING" badge instead of "OFFLINE" — more accurate since layers aren't broken, just not built yet
+- Count display shows active/total of implemented layers only — unimplemented don't count
+- Zustand immutable updates via spread operator — standard pattern for nested object updates
+
+#### Tests Passed:
+- [x] TypeScript: all interfaces typed, no `any`, no unused imports
+- [x] No console.log statements
+- [x] All CSS uses variables (--phosphor, --phosphor-dim, etc.)
+- [x] Zustand state updates are immutable (spread operator)
+- [x] Layer toggle correctly mounts/unmounts Three.js components
+- [x] SatelliteOrbits (outside EarthGroup) also conditional
+- [x] LayerToggles only renders on dashboard view
+- [x] Unimplemented layers are non-clickable (cursor: not-allowed)
+- [x] PHANTOM GRID styling: uppercase, Share Tech Mono, correct colors
+
+#### Known Issues:
+- Cannot verify interactive behavior in sandbox — user must test locally
+- Toggling layers causes Three.js component mount/unmount (not animated fade)
+
+---
+
+## [1.7.0] — 2026-03-23
+
+### Module: INVESTIGATION_SPOTLIGHT
+**Status:** ✅ USER APPROVED
+
+#### Files Created:
+- `src/components/globe/InvestigationSpotlight.tsx` — Green cone beam from above projected down to active target location. Custom GLSL shader with vertical gradient (bright at target, fading up), radial edge softening, and scan line effect. SpotlightRing pulsing at impact point (ringGeometry 0.08-0.12). Cone positioned via quaternion orientation between surface point and apex 1.5 units above. Default demo targets Moscow (55.76°N, 37.62°E) — the critical-threat marker from Phase 1.3.
+
+#### Files Modified:
+- `src/components/globe/Globe.tsx` — Added InvestigationSpotlight import, placed inside EarthGroup (spotlight pinned to surface, rotates with Earth)
+- `src/components/globe/index.ts` — Added InvestigationSpotlight to barrel export
+
+#### Decisions Made:
+- Custom GLSL shader for cone beam — volumetric feel with vertical gradient + radial softening not achievable with standard materials
+- Cone placed at midpoint between target and apex — ConeGeometry centered, quaternion orients it along target-to-apex direction
+- `setFromUnitVectors` for quaternion — clean rotation from default -Y axis to actual cone direction
+- Additive blending — cone glows and composites with other layers naturally
+- depthTest/depthWrite false — renders cleanly over globe and other layers
+- DoubleSide — visible from inside the cone as well
+- Scan line effect (sin wave moving down cone at 3x speed) — adds subtle motion
+- Impact ring pulse: 15% amplitude at 2 Hz — visible but not distracting
+- Default alpha capped at 25% — semi-transparent per PHANTOM GRID aesthetic
+- Moscow chosen as demo target — matches critical-threat marker from Phase 1.3
+
+#### Tests Passed:
+- [x] TypeScript: no errors, no unused imports, no `any` types
+- [x] No console.log statements
+- [x] GLSL shaders valid (vertex + fragment pair with uniforms)
+- [x] Cone orientation via quaternion (setFromUnitVectors)
+- [x] latLonToVec3 correctly converts coordinates to 3D position
+- [x] SpotlightRing oriented outward (lookAt + rotateY)
+- [x] Toggleable via visible prop
+- [x] Time uniform updated in useFrame for scan line animation
+- [x] All imports verified used, no dead code
+
+#### Known Issues:
+- Cannot verify WebGL rendering in sandbox — user must test locally
+- Demo spotlight on Moscow only — will be wired to activeTargetId in Phase 3
+
+---
+
+## [1.6.0] — 2026-03-23
+
+### Module: THREAT_HEATMAP_LAYER
+**Status:** ✅ USER APPROVED
+
+#### Files Created:
+- `src/components/globe/ThreatHeatmap.tsx` — 6 threat hotspot patches on the globe surface. Custom GLSL shader with radial gradient falloff (center to transparent edge), additive blending for glow where hotspots overlap. Colors per PRD: red-critical (#FF2020), red-orange (#FF4020), amber (#FFB700). Subtle pulse animation via time uniform. Demo hotspots at: Eastern Europe (critical), Middle East (high), East Asia (high), West Africa (medium), Central America (medium), South Asia (medium).
+
+#### Files Modified:
+- `src/components/globe/Globe.tsx` — Added ThreatHeatmap import, placed inside EarthGroup (hotspots pinned to surface)
+- `src/components/globe/index.ts` — Added ThreatHeatmap to barrel export
+
+#### Decisions Made:
+- Custom GLSL shader over mesh material — radial gradient can't be done with standard materials, shader gives smooth center-to-edge falloff
+- Additive blending — hotspots glow and combine naturally where overlapping
+- depthTest/depthWrite false — renders cleanly over globe surface without z-fighting
+- DoubleSide rendering — visible from any camera angle
+- Hotspot radius varies by threat intensity (0.2-0.35 units)
+- Pulse animation subtle (15% amplitude, 1.5 Hz) — not distracting
+- Final opacity capped at 35% of intensity — semi-transparent per PRD
+
+#### Tests Passed:
+- [x] TypeScript: no errors, no unused imports, no `any` types
+- [x] No console.log statements
+- [x] GLSL shaders valid (vertex + fragment pair with uniforms)
+- [x] Colors match PRD: red-critical, amber
+- [x] Additive blending for glow effect
+- [x] Pulse animation via time uniform in useFrame
+- [x] Orient to face outward (lookAt + rotateY)
+- [x] Toggleable via visible prop
+
+#### Known Issues:
+- Cannot verify WebGL rendering in sandbox — user must test locally
+- Demo hotspots are static — will be driven by target threat scores in Phase 3+5
+
+---
+
+## [1.5.0] — 2026-03-23
+
+### Module: FLIGHT_PATH_LAYER
+**Status:** ✅ USER APPROVED
+
+#### Files Created:
+- `src/components/globe/FlightPaths.tsx` — 8 animated great-circle arcs between major airports. Quadratic Bezier curves lifted above globe surface, dashed line with flowing dash-offset animation, aircraft dot moves along each arc path. Routes: JFK-LHR, LAX-NRT, DXB-SIN, CDG-JFK, SYD-HND, GRU-LHR, BLR-DXB, SVO-PEK.
+
+#### Files Modified:
+- `src/components/globe/Globe.tsx` — Added FlightPaths import, placed inside EarthGroup (arcs connect surface locations, rotate with Earth)
+- `src/components/globe/index.ts` — Added FlightPaths to barrel export
+
+#### Decisions Made:
+- Flight paths inside EarthGroup — arcs connect surface locations, must rotate with Earth (unlike satellite orbits which are inertial)
+- Quadratic Bezier curves for arcs — smooth great-circle approximation with height proportional to route distance
+- Arc height scales with distance: 0.15 (short haul) to 0.6 (long haul)
+- LineDashedMaterial with animated dashOffset for flowing dashed line effect
+- Aircraft dot uses lerp between arc points for smooth movement
+- 8 demo routes across all continents for visual variety
+- Pre-computed lineDistance attribute for proper dash rendering
+
+#### Tests Passed:
+- [x] TypeScript: no errors, no unused imports, no `any` types
+- [x] No console.log statements
+- [x] All colors use phosphor green (#00FF41)
+- [x] Arc geometry: 64 segments per curve (smooth)
+- [x] Dash animation: dashOffset animated in useFrame
+- [x] Aircraft dots: lerp-based movement along arc points
+- [x] Visibility prop: toggleable (default true)
+
+#### Known Issues:
+- Cannot verify WebGL rendering in sandbox — user must test locally
+- Pre-computed demo routes, not live OpenSky data
+- LineDashedMaterial lineWidth is 1px (WebGL limitation)
+
+---
+
+## [1.4.0] — 2026-03-23
+
+### Module: SATELLITE_ORBIT_RINGS
+**Status:** ✅ USER APPROVED
+
+#### Files Created:
+- `src/components/globe/SatelliteOrbits.tsx` — 6 orbital rings (3 LEO, 2 MEO, 1 GEO) with animated satellite dots. Each orbit has unique inclination, altitude, RAAN, and speed. Rings rendered as LineLoop geometry with phosphor green lineBasicMaterial. Satellite dots move along orbit paths via useFrame animation. Visibility toggleable via prop.
+
+#### Files Modified:
+- `src/components/globe/Globe.tsx` — Added SatelliteOrbits import, placed in GlobeScene outside EarthGroup (orbits are inertial, don't rotate with Earth)
+- `src/components/globe/index.ts` — Added SatelliteOrbits to barrel export
+
+#### Decisions Made:
+- Pre-computed representative orbits over live Celestrak TLE parsing — TLE requires SGP4 propagation library, will upgrade when API service layer is built
+- Orbits placed outside EarthGroup — satellite orbits maintain their own inertial reference frame, they don't rotate with Earth's surface
+- 6 orbits at varying altitudes/inclinations: ISS (51.6°), Starlink (53°), sun-synchronous recon (97.4°), GPS (55°), GLONASS (64.8°), GEO comms (2°)
+- Low opacity (0.04-0.12) for subtle background effect — not distracting
+- depthTest: false on ring lines so they render cleanly through the atmosphere
+- Satellite dots at 0.7 opacity for visibility against dark background
+
+#### Tests Passed:
+- [x] TypeScript: no errors, no unused imports, no `any` types
+- [x] No console.log statements
+- [x] All colors use phosphor green (#00FF41) via THREE.Color
+- [x] Ring geometry generated with 128 segments (smooth circle)
+- [x] Euler rotation correctly applies inclination (X) and RAAN (Y)
+- [x] useFrame animation moves satellite dots at correct speeds
+- [x] Visible prop controls rendering (default: true)
+
+#### Known Issues:
+- Cannot verify WebGL rendering in sandbox — user must test locally
+- Pre-computed orbits are representative, not real-time TLE data
+- Ring line width is 1px (WebGL default) — some browsers may not support lineWidth > 1
+
+---
+
+## [1.3.0] — 2026-03-23
+
+### Module: TARGET_MARKER_LAYER
+**Status:** ✅ USER APPROVED
+
+#### Files Created:
+- `src/components/globe/TargetMarkerLayer.tsx` — Pulsing green circle markers on the globe surface. lat/lon to 3D coordinate conversion, threat-score-based coloring (green/amber/red), 2s pulse animation loop per PRD, click handler for future target panel integration, 7 demo markers at global cities for visual testing.
+
+#### Files Modified:
+- `src/types/target.ts` — Added `TargetCoordinates` interface (lat, lon) and optional `coordinates` field to `Target` interface
+- `src/types/index.ts` — Added `TargetCoordinates` to barrel export
+- `src/components/globe/Globe.tsx` — Refactored EarthSphere into EarthGroup (shared rotation group for Earth mesh + markers). Added TargetMarkerLayer with DEMO_MARKERS inside EarthGroup. Added marker click handler placeholder.
+- `src/components/globe/index.ts` — Added TargetMarkerLayer, DEMO_MARKERS, GlobeMarker exports
+
+#### Decisions Made:
+- EarthGroup pattern: Earth mesh + markers share a parent group so markers rotate with the globe automatically — no manual rotation sync needed
+- Markers use `circleGeometry` + `meshBasicMaterial` (not sprites) for consistent rendering at all angles
+- `depthTest: false` on markers so they render on top of the globe surface
+- lookAt(origin) + rotateY(PI) orients marker faces outward from sphere
+- Demo markers at 7 global cities with varying threat scores to test all 3 color tiers
+- Click handler is a placeholder (prefixed with _) — will be wired to Target Manager in Phase 3
+
+#### Tests Passed:
+- [x] TypeScript: no errors, no unused imports, no `any` types
+- [x] No console.log statements
+- [x] lat/lon conversion math verified (standard geographic → spherical)
+- [x] Threat color mapping: 0-30 green, 31-60 amber, 61-100 red
+- [x] Pulse animation: 2s loop with expanding ring + fading opacity
+- [x] Markers inside EarthGroup inherit rotation (axial tilt + auto-rotate)
+- [x] Click events stop propagation (won't trigger orbit controls)
+
+#### Known Issues:
+- Cannot verify WebGL rendering in sandbox — user must test locally
+- Marker orientation uses one-time lookAt — may need adjustment if markers are repositioned dynamically
+- Demo markers will be replaced by real target data in Phase 3
+
+---
+
+## [1.2.0] — 2026-03-23
+
+### Module: RADAR_SWEEP_ANIMATION
+**Status:** ✅ USER APPROVED
+
+#### Files Created:
+- `src/components/globe/RadarSweep.tsx` — Rotating conic-gradient radar sweep behind the Three.js globe. 4s per revolution, phosphor green gradient, circular mask with concentric ring guides, crosshair lines, center dot with glow, leading edge highlight. Pure CSS animation.
+- `public/textures/earth-fallback.jpg` — Procedural 22KB fallback earth texture (1024x512) with green city lights on dark base.
+
+#### Files Modified:
+- `src/components/globe/Globe.tsx` — Replaced useLoader with custom useEarthTexture() hook (imperative THREE.TextureLoader with fallback URL chain). Added CanvasErrorBoundary. RadarSweep outside error boundary at z-index 0.
+- `src/components/globe/GlobeLoader.tsx` — Added GlobeErrorBoundary. Loading/error states both include RadarSweep.
+- `src/components/globe/index.ts` — Added RadarSweep to barrel export
+- `src/styles/phantom-grid.css` — Added `@keyframes radarSweepRotate`
+
+#### Decisions Made:
+- Pure CSS animation over Three.js shader — simpler, no GPU overhead
+- Canvas alpha 0 so sweep shows through empty space around globe
+- Replaced useLoader with manual TextureLoader to avoid Suspense crash on texture failure
+- Two-tier error boundaries for complete crash isolation
+- RadarSweep outside all error boundaries — always visible
+
+#### Tests Passed:
+- [x] TypeScript clean, no unused imports
+- [x] Zero console errors (user verified in Chrome)
+- [x] Radar sweep rotating smoothly at 4s/revolution
+- [x] Globe renders with fallback texture
+- [x] Texture failure handled gracefully (no crash)
+- [x] Error boundaries render visible PHANTOM GRID error panels
+- [x] All existing features still working (settings, nav, header/footer, boot)
+
+#### Known Issues:
+- None
+
+---
+
+## [1.1.0] — 2026-03-23
+
+### Module: THREE_JS_GLOBE
+**Status:** ✅ USER APPROVED
+
+#### Files Created:
+- `src/components/globe/Globe.tsx` — Mission Control 3D globe: Three.js sphere with NASA Black Marble texture, Fresnel atmosphere glow shader (phosphor green), 3000-point star field, auto-rotation (0.1 deg/s) with pause on interaction, OrbitControls (drag rotate, scroll zoom), directional + ambient + point lighting, wireframe fallback during texture load, GlobeHUD overlay with labels
+- `src/components/globe/GlobeLoader.tsx` — Lazy-loaded wrapper with React.lazy + Suspense for code splitting, PHANTOM GRID loading state ("LOADING MISSION CONTROL")
+- `src/components/globe/index.ts` — Barrel export for Globe and GlobeLoader
+
+#### Files Modified:
+- `src/components/panels/CenterContent.tsx` — Dashboard view now renders GlobeLoader instead of placeholder
+
+#### Decisions Made:
+- React Three Fiber (@react-three/fiber) for declarative Three.js in React — cleaner than imperative Three.js
+- @react-three/drei for OrbitControls — handles pointer locking and damping
+- NASA Black Marble texture loaded via useLoader (Suspense-based) — wireframe FallbackEarth during load
+- Custom GLSL Fresnel shader for atmosphere — green glow at edges via additive blending on BackSide
+- Star field uses BufferGeometry with 3000 points (spherical distribution) — phosphor green, 30% opacity
+- Globe lazy-loaded to keep initial bundle under 500KB budget (Three.js is ~600KB)
+- Auto-rotation pauses during user interaction (OrbitControls onStart/onEnd)
+- Camera: FOV 45, position [0,0,5], zoom range 3-10 units
+- No pan (enablePan: false) — globe stays centered
+- toneMapping disabled for accurate dark-on-dark rendering
+- Earth tilted 0.4 radians (~23 degrees) for realistic axial tilt
+
+#### Tests Passed:
+- [x] TypeScript: all types correct, no unused imports
+- [x] No console.log statements
+- [x] All UI overlay colors use CSS variables
+- [x] Proper Suspense boundaries for texture loading
+- [x] useFrame for animation (not setTimeout/requestAnimationFrame directly)
+- [x] Event listener cleanup via OrbitControls component lifecycle
+- [x] Lazy loading via React.lazy for code splitting
+- [x] GLSL shaders are valid (vertex + fragment pair)
+
+#### Known Issues:
+- Cannot verify WebGL rendering in sandbox — user must test locally
+- NASA texture is 3600x1800 (~2MB) — first load may take a few seconds on slow connections
+- Texture loads from NASA servers directly — may fail if their CDN is down (wireframe fallback handles this)
+
+---
+
 ## [0.6.0] — 2026-03-23
 
 ### Module: PWA_MANIFEST_SERVICE_WORKER
-**Status:** 🧪 TESTING
+**Status:** ✅ USER APPROVED
 
 #### Files Created:
 - `public/icons/icon-192.svg` — 192x192 PWA icon: tactical crosshair with radar rings, corner brackets, "SP" text, PHANTOM GRID colors

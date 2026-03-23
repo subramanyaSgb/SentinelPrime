@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react'
 import { useSettingsStore, type ProviderConfig } from '@/store/settingsStore'
 import { Button, Input, StatusIndicator, Separator, Timestamp } from '@/components/ui'
+import { useAIHealthCheck } from '@/hooks/useAIProvider'
 import type { AIProviderType } from '@/types'
 
 /**
@@ -9,19 +10,29 @@ import type { AIProviderType } from '@/types'
  */
 export function APIKeysTab() {
   const providers = useSettingsStore((s) => s.providers)
+  const { checkAll, checkOne, isChecking, onlineCount, totalCount } = useAIHealthCheck()
 
   return (
     <div>
-      <div
-        style={{
-          fontSize: '13px',
-          color: 'var(--phosphor)',
-          textTransform: 'uppercase',
-          marginBottom: '4px',
-        }}
-        className="text-glow"
-      >
-        API KEY MANAGEMENT
+      <div className="flex items-center justify-between" style={{ marginBottom: '4px' }}>
+        <div
+          style={{
+            fontSize: '13px',
+            color: 'var(--phosphor)',
+            textTransform: 'uppercase',
+          }}
+          className="text-glow"
+        >
+          API KEY MANAGEMENT
+        </div>
+        <Button
+          variant="default"
+          onClick={() => void checkAll()}
+          disabled={isChecking}
+          style={{ fontSize: '10px' }}
+        >
+          {isChecking ? '● TESTING ALL...' : `▶ TEST ALL // ${String(onlineCount)}/${String(totalCount)} ONLINE`}
+        </Button>
       </div>
       <div
         style={{
@@ -38,7 +49,7 @@ export function APIKeysTab() {
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '12px' }}>
         {providers.map((provider) => (
-          <ProviderKeyCard key={provider.id} provider={provider} />
+          <ProviderKeyCard key={provider.id} provider={provider} onCheckHealth={checkOne} />
         ))}
       </div>
 
@@ -66,14 +77,19 @@ export function APIKeysTab() {
   )
 }
 
-function ProviderKeyCard({ provider }: { provider: ProviderConfig }) {
+function ProviderKeyCard({
+  provider,
+  onCheckHealth,
+}: {
+  provider: ProviderConfig
+  onCheckHealth: (id: AIProviderType) => Promise<unknown>
+}) {
   const updateProviderKey = useSettingsStore((s) => s.updateProviderKey)
-  const setProviderStatus = useSettingsStore((s) => s.setProviderStatus)
-  const setProviderLastChecked = useSettingsStore((s) => s.setProviderLastChecked)
 
   const [showKey, setShowKey] = useState(false)
   const [localKey, setLocalKey] = useState(provider.apiKey)
   const [isSaved, setIsSaved] = useState(true)
+  const [lastLatency, setLastLatency] = useState<number | null>(null)
 
   const isNvidia = provider.id === 'nvidia-nemotron'
   const isOllama = provider.id === 'ollama'
@@ -94,18 +110,11 @@ function ProviderKeyCard({ provider }: { provider: ProviderConfig }) {
   }, [])
 
   const handleHealthCheck = useCallback(async () => {
-    setProviderStatus(provider.id, 'checking')
-
-    try {
-      // Simulate health check — actual implementation in AI Provider phase
-      await performHealthCheck(provider)
-      setProviderStatus(provider.id, 'valid')
-      setProviderLastChecked(provider.id, new Date())
-    } catch {
-      setProviderStatus(provider.id, 'invalid')
-      setProviderLastChecked(provider.id, new Date())
+    const result = await onCheckHealth(provider.id) as { latencyMs?: number } | undefined
+    if (result && typeof result.latencyMs === 'number') {
+      setLastLatency(result.latencyMs)
     }
-  }, [provider, setProviderStatus, setProviderLastChecked])
+  }, [provider.id, onCheckHealth])
 
   const statusMap: Record<ProviderConfig['status'], 'online' | 'degraded' | 'offline' | 'unused'> = {
     unchecked: 'unused',
@@ -262,6 +271,12 @@ function ProviderKeyCard({ provider }: { provider: ProviderConfig }) {
           {provider.status === 'checking' ? '● TESTING...' : '▶ TEST CONNECTION'}
         </Button>
 
+        {lastLatency !== null && provider.status === 'valid' && (
+          <span style={{ fontSize: '9px', color: 'var(--phosphor-dim)' }}>
+            {String(lastLatency)}MS LATENCY
+          </span>
+        )}
+
         {!provider.isDefault && hasKey && (
           <SetDefaultButton providerId={provider.id} />
         )}
@@ -308,52 +323,6 @@ function ClearKeyButton({ providerId, onClear }: { providerId: AIProviderType; o
   )
 }
 
-/**
- * Health check for a provider — pings the API endpoint.
- * Full implementation will be in Phase 2 (AI Provider System).
- * For now, does a basic fetch to the base URL.
- */
-async function performHealthCheck(provider: ProviderConfig): Promise<void> {
-  const controller = new AbortController()
-  const timeout = setTimeout(() => controller.abort(), 10000)
-
-  try {
-    if (provider.id === 'ollama') {
-      // Ollama: check if local server is running
-      const response = await fetch(`${provider.baseUrl}/api/tags`, {
-        signal: controller.signal,
-      })
-      if (!response.ok) throw new Error('OLLAMA NOT RESPONDING')
-      return
-    }
-
-    if (provider.id === 'nvidia-nemotron') {
-      // NVIDIA: use bundled key for health check
-      const response = await fetch(`${provider.baseUrl}/models`, {
-        headers: {
-          'Authorization': 'Bearer nvapi-placeholder',
-          'Content-Type': 'application/json',
-        },
-        signal: controller.signal,
-      })
-      // Even a 401 means the endpoint is reachable
-      if (response.status === 401 || response.ok) return
-      throw new Error('NVIDIA API UNREACHABLE')
-    }
-
-    // Generic OpenAI-compatible check: list models
-    const response = await fetch(`${provider.baseUrl}/models`, {
-      headers: {
-        'Authorization': `Bearer ${provider.apiKey}`,
-        'Content-Type': 'application/json',
-      },
-      signal: controller.signal,
-    })
-
-    if (!response.ok && response.status !== 401) {
-      throw new Error(`API RETURNED ${String(response.status)}`)
-    }
-  } finally {
-    clearTimeout(timeout)
-  }
-}
+// Health checks are now handled by the provider registry
+// via useAIHealthCheck hook → provider.checkHealth()
+// See: src/providers/index.ts and src/hooks/useAIProvider.ts

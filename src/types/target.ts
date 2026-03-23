@@ -6,6 +6,11 @@ export interface TargetIdentifier {
   value: string
 }
 
+export interface TargetCoordinates {
+  lat: number
+  lon: number
+}
+
 export interface Target {
   id: string
   type: TargetType
@@ -17,6 +22,7 @@ export interface Target {
   tags: string[]
   threatScore: number
   status: TargetStatus
+  coordinates?: TargetCoordinates
   createdAt: Date
   updatedAt: Date
   aiSummary?: string

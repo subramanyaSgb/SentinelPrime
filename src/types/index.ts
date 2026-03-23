@@ -1,4 +1,4 @@
-export type { Target, TargetType, TargetStatus, TargetIdentifier } from './target'
+export type { Target, TargetType, TargetStatus, TargetIdentifier, TargetCoordinates } from './target'
 export type {
   ModuleSpec,
   ModuleInput,
@@ -11,6 +11,7 @@ export type {
 export type {
   AIProvider,
   AIProviderType,
+  AIHealthResult,
   AIMessage,
   AIConversation,
 } from './ai'

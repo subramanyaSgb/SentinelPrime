@@ -1,5 +1,6 @@
 import { useAppStore } from '@/store/appStore'
 import { useTargetStore } from '@/store/targetStore'
+import { LayerToggles } from './LayerToggles'
 import type { AppView } from '@/types'
 
 /**
@@ -71,6 +72,9 @@ export function LeftPanel() {
             onClick={() => setCurrentView(item.id)}
           />
         ))}
+
+        {/* Data layer toggles — visible when expanded and on dashboard view */}
+        {isOpen && currentView === 'dashboard' && <LayerToggles />}
 
         {/* Active targets section */}
         {isOpen && activeTargets.length > 0 && (
