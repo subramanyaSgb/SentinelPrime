@@ -2,10 +2,113 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 import path from 'path'
+import type { Plugin } from 'vite'
+
+/**
+ * Dev-mode AI proxy plugin.
+ * Mimics the Vercel Edge Function /api/ai-proxy for local development.
+ * Forwards AI API calls through the Vite dev server to bypass CORS.
+ */
+function aiProxyPlugin(): Plugin {
+  return {
+    name: 'ai-proxy',
+    configureServer(server) {
+      server.middlewares.use('/api/ai-proxy', async (req, res) => {
+        if (req.method === 'OPTIONS') {
+          res.writeHead(204, {
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'POST, OPTIONS',
+            'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+          })
+          res.end()
+          return
+        }
+
+        if (req.method !== 'POST') {
+          res.writeHead(405, { 'Content-Type': 'application/json' })
+          res.end(JSON.stringify({ error: 'METHOD_NOT_ALLOWED' }))
+          return
+        }
+
+        // Read request body
+        const chunks: Buffer[] = []
+        for await (const chunk of req) {
+          chunks.push(chunk as Buffer)
+        }
+        const bodyStr = Buffer.concat(chunks).toString('utf-8')
+
+        try {
+          const proxyReq = JSON.parse(bodyStr) as {
+            targetUrl: string
+            headers: Record<string, string>
+            body: string
+            stream: boolean
+          }
+
+          if (!proxyReq.targetUrl) {
+            res.writeHead(400, { 'Content-Type': 'application/json' })
+            res.end(JSON.stringify({ error: 'MISSING_TARGET_URL' }))
+            return
+          }
+
+          // Forward to AI provider
+          const upstreamRes = await fetch(proxyReq.targetUrl, {
+            method: 'POST',
+            headers: proxyReq.headers ?? {},
+            body: proxyReq.body,
+          })
+
+          if (!upstreamRes.ok) {
+            const errText = await upstreamRes.text().catch(() => 'UNKNOWN')
+            res.writeHead(upstreamRes.status, { 'Content-Type': 'application/json' })
+            res.end(JSON.stringify({ error: `UPSTREAM_${upstreamRes.status}`, details: errText.slice(0, 500) }))
+            return
+          }
+
+          // Stream response through
+          if (proxyReq.stream && upstreamRes.body) {
+            res.writeHead(200, {
+              'Content-Type': 'text/event-stream',
+              'Cache-Control': 'no-cache',
+              'Connection': 'keep-alive',
+              'Access-Control-Allow-Origin': '*',
+            })
+
+            const reader = upstreamRes.body.getReader()
+            try {
+              while (true) {
+                const { done, value } = await reader.read()
+                if (done) break
+                res.write(value)
+              }
+            } finally {
+              reader.releaseLock()
+            }
+            res.end()
+            return
+          }
+
+          // Non-streaming response
+          const data = await upstreamRes.text()
+          res.writeHead(200, {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*',
+          })
+          res.end(data)
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : 'PROXY_ERROR'
+          res.writeHead(500, { 'Content-Type': 'application/json' })
+          res.end(JSON.stringify({ error: msg }))
+        }
+      })
+    },
+  }
+}
 
 export default defineConfig({
   plugins: [
     react(),
+    aiProxyPlugin(),
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['icons/*.svg', 'icons/*.png', 'textures/*.jpg'],
@@ -51,11 +154,9 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,jpg,woff2}'],
-        // Precache app shell for offline capability (PRD 14.2)
         navigateFallback: 'index.html',
         navigateFallbackAllowlist: [/^(?!\/__).*/],
         runtimeCaching: [
-          // Google Fonts stylesheets
           {
             urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
             handler: 'CacheFirst',
@@ -63,14 +164,13 @@ export default defineConfig({
               cacheName: 'sp-google-fonts-style',
               expiration: {
                 maxEntries: 10,
-                maxAgeSeconds: 60 * 60 * 24 * 365, // 1 year
+                maxAgeSeconds: 60 * 60 * 24 * 365,
               },
               cacheableResponse: {
                 statuses: [0, 200],
               },
             },
           },
-          // Google Fonts files
           {
             urlPattern: /^https:\/\/fonts\.gstatic\.com\/.*/i,
             handler: 'CacheFirst',
@@ -85,7 +185,6 @@ export default defineConfig({
               },
             },
           },
-          // External API calls — NetworkFirst with offline fallback (PRD 14.2)
           {
             urlPattern: /^https:\/\/.*\.api\..*/i,
             handler: 'NetworkFirst',
@@ -93,7 +192,7 @@ export default defineConfig({
               cacheName: 'sp-api-cache',
               expiration: {
                 maxEntries: 100,
-                maxAgeSeconds: 60 * 60 * 24, // 24 hours
+                maxAgeSeconds: 60 * 60 * 24,
               },
               cacheableResponse: {
                 statuses: [0, 200],
@@ -101,7 +200,6 @@ export default defineConfig({
               networkTimeoutSeconds: 10,
             },
           },
-          // OSINT API responses — NetworkFirst for freshness
           {
             urlPattern: /^https:\/\/(haveibeenpwned|api\.hunter|crt\.sh|api\.shodan|urlscan|ipapi).*/i,
             handler: 'NetworkFirst',
@@ -109,7 +207,7 @@ export default defineConfig({
               cacheName: 'sp-osint-api-cache',
               expiration: {
                 maxEntries: 200,
-                maxAgeSeconds: 60 * 60 * 24 * 7, // 7 days
+                maxAgeSeconds: 60 * 60 * 24 * 7,
               },
               cacheableResponse: {
                 statuses: [0, 200],

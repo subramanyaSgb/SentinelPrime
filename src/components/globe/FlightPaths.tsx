@@ -233,7 +233,7 @@ function FlightPath({ route }: FlightPathProps) {
 
     // Animate dash offset for flowing dashed line
     if (lineRef.current) {
-      const material = lineRef.current.material as THREE.LineDashedMaterial
+      const material = lineRef.current.material as THREE.LineDashedMaterial & { dashOffset: number }
       material.dashOffset = -t * route.speed * 10
     }
 
@@ -245,9 +245,12 @@ function FlightPath({ route }: FlightPathProps) {
       const frac = (progress * (arcPoints.length - 1)) - index
 
       // Lerp between two arc points for smooth movement
+      const pointA = arcPoints[index]
+      const pointB = arcPoints[nextIndex]
+      if (!pointA || !pointB) return
       const pos = new THREE.Vector3().lerpVectors(
-        arcPoints[index],
-        arcPoints[nextIndex],
+        pointA,
+        pointB,
         frac
       )
       planeRef.current.position.copy(pos)
@@ -280,6 +283,7 @@ function FlightPath({ route }: FlightPathProps) {
   return (
     <group>
       {/* Dashed arc line */}
+      {/* @ts-expect-error — R3F 'line' conflicts with SVG line type */}
       <line ref={lineRef} geometry={computedGeometry}>
         <lineDashedMaterial
           color={new THREE.Color(0x00ff41)}

@@ -1,4 +1,5 @@
 import type { AIProvider, AIProviderType, AIHealthResult } from '@/types'
+import { proxyFetch } from './proxyFetch'
 
 /**
  * NVIDIA Nemotron-3 Super 120B Provider — PRIMARY AI PROVIDER.
@@ -9,7 +10,7 @@ import type { AIProvider, AIProviderType, AIHealthResult } from '@/types'
  * - Handles both reasoning_content (CoT) and content (final answer) in streaming
  * - Bundled API key — no user configuration required
  *
- * Uses native fetch instead of openai SDK to avoid browser bundle bloat.
+ * Routes through /api/ai-proxy in production to avoid CORS blocking.
  */
 
 const NVIDIA_BASE_URL = 'https://integrate.api.nvidia.com/v1'
@@ -61,10 +62,11 @@ export class NvidiaProvider implements AIProvider {
       false
     )
 
-    const response = await this.fetchWithTimeout(`${this.baseUrl}/chat/completions`, {
+    const response = await proxyFetch(`${this.baseUrl}/chat/completions`, {
       method: 'POST',
       headers: this.buildHeaders(),
       body: JSON.stringify(body),
+      timeout: REQUEST_TIMEOUT,
     })
 
     if (!response.ok) {
@@ -91,10 +93,11 @@ export class NvidiaProvider implements AIProvider {
       true
     )
 
-    const response = await this.fetchWithTimeout(`${this.baseUrl}/chat/completions`, {
+    const response = await proxyFetch(`${this.baseUrl}/chat/completions`, {
       method: 'POST',
       headers: this.buildHeaders(),
       body: JSON.stringify(body),
+      timeout: REQUEST_TIMEOUT,
     })
 
     if (!response.ok) {
@@ -173,9 +176,8 @@ export class NvidiaProvider implements AIProvider {
     const timeout = setTimeout(() => controller.abort(), 10000)
 
     try {
-      // Use /chat/completions (not /models) — more likely to have CORS headers
-      // for browser-based apps. max_tokens=1 keeps response near-instant.
-      const response = await fetch(`${this.baseUrl}/chat/completions`, {
+      // Use proxy for the health check too
+      const response = await proxyFetch(`${this.baseUrl}/chat/completions`, {
         method: 'POST',
         headers: this.buildHeaders(),
         body: JSON.stringify({
@@ -185,7 +187,7 @@ export class NvidiaProvider implements AIProvider {
           temperature: 0,
           stream: false,
         }),
-        signal: controller.signal,
+        timeout: 10000,
       })
 
       const latencyMs = Math.round(performance.now() - start)
@@ -214,7 +216,7 @@ export class NvidiaProvider implements AIProvider {
       const message = err instanceof Error ? err.message : 'UNKNOWN ERROR'
       // "Failed to fetch" typically means CORS or network error in the browser
       const errorMsg = message.toLowerCase().includes('fetch')
-        ? 'CORS/NETWORK_ERROR: CHECK BROWSER CONSOLE'
+        ? 'CORS/NETWORK_ERROR: PROXY MAY BE UNAVAILABLE'
         : message.toUpperCase()
       return { ok: false, latencyMs, error: errorMsg, model: this.model }
     } finally {
@@ -242,25 +244,6 @@ export class NvidiaProvider implements AIProvider {
       stream,
       chat_template_kwargs: { enable_thinking: true },
       reasoning_budget: 16384,
-    }
-  }
-
-  private async fetchWithTimeout(
-    url: string,
-    init: RequestInit
-  ): Promise<Response> {
-    const controller = new AbortController()
-    const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT)
-
-    try {
-      return await fetch(url, { ...init, signal: controller.signal })
-    } catch (err) {
-      if (err instanceof DOMException && err.name === 'AbortError') {
-        throw new Error('NVIDIA API TIMEOUT: REQUEST EXCEEDED 30S')
-      }
-      throw err
-    } finally {
-      clearTimeout(timeout)
     }
   }
 }

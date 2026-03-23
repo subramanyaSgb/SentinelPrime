@@ -1,4 +1,5 @@
 import type { AIProvider, AIProviderType, AIHealthResult } from '@/types'
+import { proxyFetch } from './proxyFetch'
 
 /**
  * OpenRouter Provider — MULTI-MODEL GATEWAY.
@@ -8,6 +9,7 @@ import type { AIProvider, AIProviderType, AIHealthResult } from '@/types'
  * Default model: meta-llama/llama-3-8b-instruct:free
  *
  * OpenRouter requires HTTP-Referer and X-Title headers for identification.
+ * Routes through /api/ai-proxy to avoid CORS blocking.
  */
 
 const DEFAULT_OPENROUTER_URL = 'https://openrouter.ai/api/v1'
@@ -42,7 +44,7 @@ export class OpenRouterProvider implements AIProvider {
       throw new Error('OPENROUTER: API KEY NOT CONFIGURED')
     }
 
-    const response = await this.fetchWithTimeout(`${this.baseUrl}/chat/completions`, {
+    const response = await proxyFetch(`${this.baseUrl}/chat/completions`, {
       method: 'POST',
       headers: this.buildHeaders(),
       body: JSON.stringify({
@@ -55,6 +57,7 @@ export class OpenRouterProvider implements AIProvider {
         max_tokens: 8192,
         stream: false,
       }),
+      timeout: REQUEST_TIMEOUT,
     })
 
     if (!response.ok) {
@@ -77,7 +80,7 @@ export class OpenRouterProvider implements AIProvider {
       throw new Error('OPENROUTER: API KEY NOT CONFIGURED')
     }
 
-    const response = await this.fetchWithTimeout(`${this.baseUrl}/chat/completions`, {
+    const response = await proxyFetch(`${this.baseUrl}/chat/completions`, {
       method: 'POST',
       headers: this.buildHeaders(),
       body: JSON.stringify({
@@ -90,6 +93,7 @@ export class OpenRouterProvider implements AIProvider {
         max_tokens: 8192,
         stream: true,
       }),
+      timeout: REQUEST_TIMEOUT,
     })
 
     if (!response.ok) {
@@ -157,10 +161,10 @@ export class OpenRouterProvider implements AIProvider {
 
     const start = performance.now()
     try {
-      // OpenRouter: check auth by listing models
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/models`, {
+      const response = await proxyFetch(`${this.baseUrl}/models`, {
         method: 'GET',
         headers: this.buildHeaders(),
+        timeout: 10000,
       })
 
       const latencyMs = Math.round(performance.now() - start)
@@ -192,25 +196,6 @@ export class OpenRouterProvider implements AIProvider {
       'Content-Type': 'application/json',
       'HTTP-Referer': 'https://sentinelprime.app',
       'X-Title': 'SentinelPrime OSINT Platform',
-    }
-  }
-
-  private async fetchWithTimeout(
-    url: string,
-    init: RequestInit
-  ): Promise<Response> {
-    const controller = new AbortController()
-    const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT)
-
-    try {
-      return await fetch(url, { ...init, signal: controller.signal })
-    } catch (err) {
-      if (err instanceof DOMException && err.name === 'AbortError') {
-        throw new Error('OPENROUTER TIMEOUT: REQUEST EXCEEDED 30S')
-      }
-      throw err
-    } finally {
-      clearTimeout(timeout)
     }
   }
 }

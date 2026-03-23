@@ -196,7 +196,7 @@ export function InvestigationSpotlight({
 
   // Update time uniform
   useFrame(({ clock }) => {
-    if (materialRef.current) {
+    if (materialRef.current?.uniforms?.uTime) {
       materialRef.current.uniforms.uTime.value = clock.getElapsedTime()
     }
   })

@@ -1,4 +1,5 @@
 import type { AIProvider, AIProviderType, AIHealthResult } from '@/types'
+import { fetchWithTimeout } from './proxyFetch'
 
 /**
  * Ollama Provider — LOCAL LLM PROVIDER.
@@ -7,7 +8,7 @@ import type { AIProvider, AIProviderType, AIHealthResult } from '@/types'
  * Runs locally on the user's machine. No API key required.
  * Uses Ollama's REST API on localhost:11434.
  *
- * API Reference: https://github.com/ollama/ollama/blob/main/docs/api.md
+ * No CORS proxy needed — localhost requests are same-origin.
  */
 
 const DEFAULT_OLLAMA_URL = 'http://localhost:11434'
@@ -37,7 +38,7 @@ export class OllamaProvider implements AIProvider {
   }
 
   async generate(prompt: string, system: string): Promise<string> {
-    const response = await this.fetchWithTimeout(`${this.baseUrl}/api/chat`, {
+    const response = await fetchWithTimeout(`${this.baseUrl}/api/chat`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -48,7 +49,7 @@ export class OllamaProvider implements AIProvider {
         ] satisfies ChatMessage[],
         stream: false,
       }),
-    })
+    }, REQUEST_TIMEOUT)
 
     if (!response.ok) {
       const errorText = await response.text().catch(() => 'UNKNOWN ERROR')
@@ -66,7 +67,7 @@ export class OllamaProvider implements AIProvider {
     system: string,
     onChunk: (text: string, isReasoning: boolean) => void
   ): Promise<void> {
-    const response = await this.fetchWithTimeout(`${this.baseUrl}/api/chat`, {
+    const response = await fetchWithTimeout(`${this.baseUrl}/api/chat`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -77,7 +78,7 @@ export class OllamaProvider implements AIProvider {
         ] satisfies ChatMessage[],
         stream: true,
       }),
-    })
+    }, REQUEST_TIMEOUT)
 
     if (!response.ok) {
       const errorText = await response.text().catch(() => 'UNKNOWN ERROR')
@@ -139,10 +140,9 @@ export class OllamaProvider implements AIProvider {
   async checkHealth(): Promise<AIHealthResult> {
     const start = performance.now()
     try {
-      // Check if Ollama is running by listing available models
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/api/tags`, {
+      const response = await fetchWithTimeout(`${this.baseUrl}/api/tags`, {
         method: 'GET',
-      })
+      }, 10000)
 
       const latencyMs = Math.round(performance.now() - start)
 
@@ -155,7 +155,6 @@ export class OllamaProvider implements AIProvider {
         }
       }
 
-      // Check if the configured model is available
       const data = await response.json() as {
         models?: Array<{ name?: string }>
       }
@@ -190,25 +189,6 @@ export class OllamaProvider implements AIProvider {
       }
 
       return { ok: false, latencyMs, error: message, model: this.model }
-    }
-  }
-
-  private async fetchWithTimeout(
-    url: string,
-    init: RequestInit
-  ): Promise<Response> {
-    const controller = new AbortController()
-    const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT)
-
-    try {
-      return await fetch(url, { ...init, signal: controller.signal })
-    } catch (err) {
-      if (err instanceof DOMException && err.name === 'AbortError') {
-        throw new Error('OLLAMA TIMEOUT: LOCAL INFERENCE EXCEEDED 60S')
-      }
-      throw err
-    } finally {
-      clearTimeout(timeout)
     }
   }
 }

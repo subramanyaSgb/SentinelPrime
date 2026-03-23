@@ -5,11 +5,12 @@ import { useTargetStore } from '@/store/targetStore'
 import { useSettingsStore } from '@/store/settingsStore'
 import { getActiveProviderFromConfigs } from '@/providers'
 import { saveToolResult } from '@/services/toolResultService'
+import { executeApiSource } from '@/services/osintApis'
 import type { ModuleSpec, ToolResult } from '@/types'
 
 /**
  * GenericModuleExecutor — Universal execution component for ALL modules.
- * Renders dynamic inputs from ModuleSpec, executes via AI + link-outs,
+ * Renders dynamic inputs from ModuleSpec, executes via real APIs + AI + link-outs,
  * saves results to IndexedDB, and supports AI analysis.
  */
 
@@ -21,6 +22,8 @@ interface ExecutionResult {
   data: Record<string, unknown>
   linkOuts: { name: string; url: string }[]
   aiAnalysis: string | null
+  apiResults: Record<string, unknown>[]
+  apiErrors: string[]
 }
 
 export function GenericModuleExecutor({ spec }: GenericModuleExecutorProps) {
@@ -45,6 +48,12 @@ export function GenericModuleExecutor({ spec }: GenericModuleExecutorProps) {
     (inp) => !inp.required || (inputValues[inp.name] ?? '').trim().length > 0
   )
 
+  // Get the primary input value
+  const getPrimaryInput = (): string => {
+    const firstInputName = spec.inputs[0]?.name ?? ''
+    return firstInputName ? (inputValues[firstInputName] ?? '') : ''
+  }
+
   // Execute the module
   const handleExecute = useCallback(async () => {
     if (!allRequiredFilled || isExecuting) return
@@ -53,23 +62,32 @@ export function GenericModuleExecutor({ spec }: GenericModuleExecutorProps) {
     setError(null)
     setResult(null)
     setIsSaved(false)
+    setStreamText('')
 
     try {
       const linkOuts: { name: string; url: string }[] = []
       const data: Record<string, unknown> = {}
+      const apiResults: Record<string, unknown>[] = []
+      const apiErrors: string[] = []
+      const primaryInput = getPrimaryInput()
 
-      // Generate link-out URLs based on data sources
+      // Execute real API calls for free_api sources
       for (const ds of spec.dataSources) {
+        if (ds.type === 'free_api') {
+          const apiResult = await executeApiSource(ds.name, primaryInput)
+          if (apiResult.data) {
+            apiResults.push({ source: ds.name, ...apiResult.data })
+            data[ds.name] = apiResult.data
+          }
+          if (apiResult.error) {
+            apiErrors.push(`${ds.name}: ${apiResult.error}`)
+          }
+        }
+
         if (ds.type === 'link_out') {
           const urls = generateLinkOuts(ds.name, spec, inputValues)
           linkOuts.push(...urls)
         }
-      }
-
-      // For modules with free_api sources, attempt real API calls
-      const hasApiSource = spec.dataSources.some((ds) => ds.type === 'free_api')
-      if (hasApiSource) {
-        data['apiNote'] = 'API integration active for this module. See dedicated module component for full results.'
       }
 
       // Generate AI analysis if AI is enabled
@@ -84,9 +102,13 @@ export function GenericModuleExecutor({ spec }: GenericModuleExecutorProps) {
               .map((inp) => `${inp.label}: ${inputValues[inp.name] ?? 'N/A'}`)
               .join('\n')
 
-            const prompt = `Module: ${spec.name}\nCategory: ${spec.category}\nDescription: ${spec.description}\n\nInputs:\n${inputSummary}\n\n${spec.aiPrompt ?? 'Analyze and provide intelligence assessment.'}`
+            const apiDataSummary = apiResults.length > 0
+              ? `\n\nAPI RESULTS:\n${JSON.stringify(apiResults, null, 2).slice(0, 3000)}`
+              : ''
 
-            const systemPrompt = `You are SentinelPrime's intelligence analyst AI. You are executing the ${spec.name} module in the ${spec.category} category. Provide structured, actionable intelligence output. Use UPPERCASE for section headers. Include confidence scores where applicable.${target ? `\n\nCurrent target: ${target.name} (${target.type})` : ''}`
+            const prompt = `Module: ${spec.name}\nCategory: ${spec.category}\nDescription: ${spec.description}\n\nInputs:\n${inputSummary}${apiDataSummary}\n\n${spec.aiPrompt ?? 'Analyze the data and provide structured intelligence assessment. Include confidence scores, key findings, risk indicators, and recommended next investigative steps.'}`
+
+            const systemPrompt = `You are SentinelPrime's intelligence analyst AI. You are executing the ${spec.name} module in the ${spec.category} category. Provide structured, actionable intelligence output. Use UPPERCASE for section headers. Include confidence scores where applicable. Be thorough but concise.${target ? `\n\nCurrent target: ${target.name} (${target.type})` : ''}`
 
             let fullResponse = ''
             await provider.streamGenerate(prompt, systemPrompt, (text: string, isReasoning: boolean) => {
@@ -98,13 +120,13 @@ export function GenericModuleExecutor({ spec }: GenericModuleExecutorProps) {
 
             aiAnalysis = fullResponse
           }
-        } catch {
-          // AI failure is non-fatal — results still include link-outs
-          aiAnalysis = null
+        } catch (aiErr) {
+          const aiErrMsg = aiErr instanceof Error ? aiErr.message : 'AI ANALYSIS FAILED'
+          apiErrors.push(`AI: ${aiErrMsg}`)
         }
       }
 
-      setResult({ data, linkOuts, aiAnalysis })
+      setResult({ data, linkOuts, aiAnalysis, apiResults, apiErrors })
       setStreamText('')
     } catch (err) {
       const errMsg = err instanceof Error ? err.message : 'Execution failed'
@@ -112,6 +134,7 @@ export function GenericModuleExecutor({ spec }: GenericModuleExecutorProps) {
     } finally {
       setIsExecuting(false)
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [allRequiredFilled, isExecuting, spec, inputValues, providers, target])
 
   // AI Analyze existing results
@@ -129,10 +152,14 @@ export function GenericModuleExecutor({ spec }: GenericModuleExecutorProps) {
         .map((inp) => `${inp.label}: ${inputValues[inp.name] ?? 'N/A'}`)
         .join('\n')
 
-      const prompt = `Analyze these results more deeply:\n\nModule: ${spec.name}\nInputs:\n${inputSummary}\n\nLink-out resources generated: ${result.linkOuts.map((l) => l.name).join(', ')}\nPrevious AI analysis: ${result.aiAnalysis ?? 'None'}\n\nProvide deeper analysis, cross-reference findings, identify patterns, and recommend next investigative steps.`
+      const apiDataStr = result.apiResults.length > 0
+        ? `\nAPI Data:\n${JSON.stringify(result.apiResults, null, 2).slice(0, 3000)}`
+        : ''
+
+      const prompt = `Analyze these results more deeply:\n\nModule: ${spec.name}\nInputs:\n${inputSummary}\n${apiDataStr}\n\nLink-out resources: ${result.linkOuts.map((l) => l.name).join(', ')}\nPrevious analysis: ${result.aiAnalysis ?? 'None'}\n\nProvide deeper analysis, cross-reference findings, identify patterns, anomalies, and recommend specific next investigative steps.`
 
       let fullResponse = ''
-      await provider.streamGenerate(prompt, 'You are SentinelPrime intelligence analyst. Provide deep, structured analysis.', (text: string, isReasoning: boolean) => {
+      await provider.streamGenerate(prompt, 'You are SentinelPrime intelligence analyst. Provide deep, structured analysis with confidence scores.', (text: string, isReasoning: boolean) => {
         if (!isReasoning) {
           fullResponse += text
           setStreamText(fullResponse)
@@ -142,7 +169,7 @@ export function GenericModuleExecutor({ spec }: GenericModuleExecutorProps) {
       setResult((prev) => prev ? { ...prev, aiAnalysis: fullResponse } : prev)
       setStreamText('')
     } catch {
-      setError('AI analysis failed')
+      setError('AI analysis failed — check provider configuration in Settings')
     } finally {
       setIsAnalyzing(false)
     }
@@ -161,10 +188,14 @@ export function GenericModuleExecutor({ spec }: GenericModuleExecutorProps) {
       output: {
         linkOuts: result.linkOuts,
         data: result.data,
+        apiResults: result.apiResults,
       },
       aiAnalysis: result.aiAnalysis ?? undefined,
-      confidence: result.aiAnalysis ? 70 : 40,
-      sources: result.linkOuts.map((l) => l.name),
+      confidence: result.apiResults.length > 0 ? 75 : result.aiAnalysis ? 60 : 40,
+      sources: [
+        ...result.linkOuts.map((l) => l.name),
+        ...result.apiResults.map((r) => String(r['source'] ?? 'API')),
+      ],
       savedAt: new Date(),
       tags: spec.tags,
     }
@@ -181,6 +212,9 @@ export function GenericModuleExecutor({ spec }: GenericModuleExecutorProps) {
       `CATEGORY: ${spec.category.toUpperCase()}`,
       '',
       ...spec.inputs.map((inp) => `${inp.label}: ${inputValues[inp.name] ?? 'N/A'}`),
+      '',
+      result.apiResults.length > 0 ? 'API RESULTS:' : '',
+      result.apiResults.length > 0 ? JSON.stringify(result.apiResults, null, 2) : '',
       '',
       result.linkOuts.length > 0 ? 'LINK-OUT RESOURCES:' : '',
       ...result.linkOuts.map((l) => `- ${l.name}: ${l.url}`),
@@ -358,6 +392,62 @@ export function GenericModuleExecutor({ spec }: GenericModuleExecutorProps) {
       {/* Results */}
       {result && !isExecuting && (
         <div style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+
+          {/* API Results */}
+          {result.apiResults.length > 0 && (
+            <div
+              style={{
+                padding: '8px 10px',
+                background: 'var(--bg-deep)',
+                border: '1px solid var(--phosphor-faint)',
+              }}
+            >
+              <div style={{ fontSize: '10px', color: 'var(--phosphor)', textTransform: 'uppercase', marginBottom: '6px' }}>
+                ● API RESULTS ({String(result.apiResults.length)} SOURCES)
+              </div>
+              <div style={{ fontSize: '9px', color: 'var(--phosphor)', lineHeight: 1.6 }}>
+                {result.apiResults.map((apiRes, idx) => (
+                  <div key={`api-${String(idx)}`} style={{ marginBottom: '8px' }}>
+                    <div style={{ color: 'var(--phosphor-dim)', marginBottom: '2px', textTransform: 'uppercase' }}>
+                      {String(apiRes['source'] ?? `SOURCE ${String(idx + 1)}`)}:
+                    </div>
+                    <pre
+                      style={{
+                        margin: 0,
+                        fontSize: '9px',
+                        color: 'var(--phosphor)',
+                        whiteSpace: 'pre-wrap',
+                        wordBreak: 'break-all',
+                        maxHeight: '150px',
+                        overflowY: 'auto',
+                      }}
+                    >
+                      {formatApiResult(apiRes)}
+                    </pre>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* API Errors */}
+          {result.apiErrors.length > 0 && (
+            <div
+              style={{
+                padding: '6px 10px',
+                background: 'rgba(255, 183, 0, 0.03)',
+                border: '1px solid var(--amber)',
+                fontSize: '9px',
+                color: 'var(--amber)',
+                textTransform: 'uppercase',
+              }}
+            >
+              {result.apiErrors.map((err, idx) => (
+                <div key={`err-${String(idx)}`}>⚠ {err}</div>
+              ))}
+            </div>
+          )}
+
           {/* Link-out resources */}
           {result.linkOuts.length > 0 && (
             <div
@@ -464,6 +554,28 @@ export function GenericModuleExecutor({ spec }: GenericModuleExecutorProps) {
 }
 
 /**
+ * Format API result for display — show key-value pairs nicely.
+ */
+function formatApiResult(result: Record<string, unknown>): string {
+  const entries = Object.entries(result).filter(([key]) => key !== 'source')
+  if (entries.length === 0) return 'No data returned'
+
+  return entries
+    .map(([key, value]) => {
+      if (value === null || value === undefined) return null
+      if (typeof value === 'object') {
+        if (Array.isArray(value)) {
+          return `${key}: [${String(value.length)} items]`
+        }
+        return `${key}: ${JSON.stringify(value, null, 2).slice(0, 200)}`
+      }
+      return `${key}: ${String(value)}`
+    })
+    .filter(Boolean)
+    .join('\n')
+}
+
+/**
  * Generate link-out URLs based on data source name and module inputs.
  * Maps known service names to URL templates.
  */
@@ -526,6 +638,16 @@ function generateLinkOuts(
     'FCC Database': [{ name: 'FCC License Search', url: `https://wireless2.fcc.gov/UlsApp/UlsSearch/searchLicense.jsp` }],
     'OOKLA': [{ name: 'Speedtest Coverage', url: `https://www.speedtest.net/ookla-5g-map` }],
     'Reddit API': [{ name: 'Reddit Profile', url: `https://www.reddit.com/user/${primaryInput}` }],
+    'Google Safe Browsing': [{ name: 'Google Transparency Report', url: `https://transparencyreport.google.com/safe-browsing/search?url=${encoded}` }],
+    'Censys': [{ name: 'Censys Search', url: `https://search.censys.io/search?resource=hosts&q=${encoded}` }],
+    'BGP Toolkit': [{ name: 'Hurricane Electric BGP', url: `https://bgp.he.net/search?search%5Bsearch%5D=${encoded}&commit=Search` }],
+    'AbuseIPDB': [{ name: 'AbuseIPDB', url: `https://www.abuseipdb.com/check/${primaryInput}` }],
+    'Wigle.net': [{ name: 'WiGLE', url: `https://wigle.net/search` }],
+    'FlightAware': [{ name: 'FlightAware', url: `https://flightaware.com/live/flight/${primaryInput}` }],
+    'ADS-B Exchange': [{ name: 'ADS-B Exchange', url: `https://globe.adsbexchange.com/?icao=${primaryInput}` }],
+    'WHOIS': [{ name: 'WHOIS Lookup', url: `https://www.whois.com/whois/${primaryInput}` }],
+    'DNSdumpster': [{ name: 'DNSdumpster', url: `https://dnsdumpster.com/` }],
+    'SecurityTrails': [{ name: 'SecurityTrails', url: `https://securitytrails.com/domain/${primaryInput}/dns` }],
   }
 
   // Default: generate Google search for the source

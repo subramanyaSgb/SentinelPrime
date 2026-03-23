@@ -1,7 +1,6 @@
 import { useState, useCallback, useRef } from 'react'
 import { ModuleCard } from '../ModuleCard'
 import { getModuleById } from '@/constants/moduleRegistry'
-import { Button } from '@/components/ui'
 
 /**
  * MetadataExtractor — Phase 4.8

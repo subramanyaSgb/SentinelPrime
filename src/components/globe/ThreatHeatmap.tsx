@@ -209,7 +209,7 @@ function HotspotPatch({ hotspot }: HotspotPatchProps) {
     }
 
     // Update time for pulse animation
-    if (materialRef.current) {
+    if (materialRef.current?.uniforms?.uTime) {
       materialRef.current.uniforms.uTime.value = clock.getElapsedTime()
     }
   })

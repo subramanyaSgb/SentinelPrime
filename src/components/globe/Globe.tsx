@@ -108,7 +108,7 @@ function useEarthTexture(): { texture: THREE.Texture | null; status: TextureStat
         return
       }
 
-      const url = EARTH_TEXTURE_URLS[urlIndex]
+      const url = EARTH_TEXTURE_URLS[urlIndex] ?? ''
       loader.load(
         url,
         // onLoad — success

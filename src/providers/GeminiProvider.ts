@@ -1,4 +1,5 @@
 import type { AIProvider, AIProviderType, AIHealthResult } from '@/types'
+import { fetchWithTimeout } from './proxyFetch'
 
 /**
  * Google Gemini Provider — CLOUD AI FALLBACK.
@@ -8,6 +9,7 @@ import type { AIProvider, AIProviderType, AIHealthResult } from '@/types'
  *
  * Note: Gemini uses a different API format than OpenAI-compatible providers.
  * API key is passed as a URL parameter, not a Bearer token.
+ * Gemini's API supports CORS natively — no proxy needed.
  */
 
 const DEFAULT_GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta'
@@ -45,7 +47,7 @@ export class GeminiProvider implements AIProvider {
     const url = `${this.baseUrl}/models/${this.model}:generateContent?key=${this.apiKey}`
     const contents = this.buildContents(prompt, system)
 
-    const response = await this.fetchWithTimeout(url, {
+    const response = await fetchWithTimeout(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -56,7 +58,7 @@ export class GeminiProvider implements AIProvider {
           maxOutputTokens: 8192,
         },
       }),
-    })
+    }, REQUEST_TIMEOUT)
 
     if (!response.ok) {
       const errorText = await response.text().catch(() => 'UNKNOWN ERROR')
@@ -84,7 +86,7 @@ export class GeminiProvider implements AIProvider {
     const url = `${this.baseUrl}/models/${this.model}:streamGenerateContent?key=${this.apiKey}&alt=sse`
     const contents = this.buildContents(prompt, system)
 
-    const response = await this.fetchWithTimeout(url, {
+    const response = await fetchWithTimeout(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -95,7 +97,7 @@ export class GeminiProvider implements AIProvider {
           maxOutputTokens: 8192,
         },
       }),
-    })
+    }, REQUEST_TIMEOUT)
 
     if (!response.ok) {
       const errorText = await response.text().catch(() => 'UNKNOWN ERROR')
@@ -162,9 +164,8 @@ export class GeminiProvider implements AIProvider {
 
     const start = performance.now()
     try {
-      // List models to verify API key and connectivity
       const url = `${this.baseUrl}/models?key=${this.apiKey}`
-      const response = await this.fetchWithTimeout(url, { method: 'GET' })
+      const response = await fetchWithTimeout(url, { method: 'GET' }, 10000)
 
       const latencyMs = Math.round(performance.now() - start)
 
@@ -200,24 +201,5 @@ export class GeminiProvider implements AIProvider {
       : prompt
 
     return [{ role: 'user', parts: [{ text: combinedPrompt }] }]
-  }
-
-  private async fetchWithTimeout(
-    url: string,
-    init: RequestInit
-  ): Promise<Response> {
-    const controller = new AbortController()
-    const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT)
-
-    try {
-      return await fetch(url, { ...init, signal: controller.signal })
-    } catch (err) {
-      if (err instanceof DOMException && err.name === 'AbortError') {
-        throw new Error('GEMINI TIMEOUT: REQUEST EXCEEDED 30S')
-      }
-      throw err
-    } finally {
-      clearTimeout(timeout)
-    }
   }
 }

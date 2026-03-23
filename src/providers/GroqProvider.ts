@@ -1,4 +1,5 @@
 import type { AIProvider, AIProviderType, AIHealthResult } from '@/types'
+import { proxyFetch } from './proxyFetch'
 
 /**
  * Groq Provider — ULTRA-FAST INFERENCE.
@@ -6,6 +7,7 @@ import type { AIProvider, AIProviderType, AIHealthResult } from '@/types'
  * PRD Section 11.5: Groq API (optional) — Ultra-fast free tier.
  * Uses OpenAI-compatible API format at api.groq.com.
  * Default model: llama3-70b-8192 (free tier).
+ * Routes through /api/ai-proxy to avoid CORS blocking.
  */
 
 const DEFAULT_GROQ_URL = 'https://api.groq.com/openai/v1'
@@ -40,7 +42,7 @@ export class GroqProvider implements AIProvider {
       throw new Error('GROQ: API KEY NOT CONFIGURED')
     }
 
-    const response = await this.fetchWithTimeout(`${this.baseUrl}/chat/completions`, {
+    const response = await proxyFetch(`${this.baseUrl}/chat/completions`, {
       method: 'POST',
       headers: this.buildHeaders(),
       body: JSON.stringify({
@@ -53,6 +55,7 @@ export class GroqProvider implements AIProvider {
         max_tokens: 8192,
         stream: false,
       }),
+      timeout: REQUEST_TIMEOUT,
     })
 
     if (!response.ok) {
@@ -75,7 +78,7 @@ export class GroqProvider implements AIProvider {
       throw new Error('GROQ: API KEY NOT CONFIGURED')
     }
 
-    const response = await this.fetchWithTimeout(`${this.baseUrl}/chat/completions`, {
+    const response = await proxyFetch(`${this.baseUrl}/chat/completions`, {
       method: 'POST',
       headers: this.buildHeaders(),
       body: JSON.stringify({
@@ -88,6 +91,7 @@ export class GroqProvider implements AIProvider {
         max_tokens: 8192,
         stream: true,
       }),
+      timeout: REQUEST_TIMEOUT,
     })
 
     if (!response.ok) {
@@ -155,9 +159,10 @@ export class GroqProvider implements AIProvider {
 
     const start = performance.now()
     try {
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/models`, {
+      const response = await proxyFetch(`${this.baseUrl}/models`, {
         method: 'GET',
         headers: this.buildHeaders(),
+        timeout: 10000,
       })
 
       const latencyMs = Math.round(performance.now() - start)
@@ -187,25 +192,6 @@ export class GroqProvider implements AIProvider {
     return {
       'Authorization': `Bearer ${this.apiKey}`,
       'Content-Type': 'application/json',
-    }
-  }
-
-  private async fetchWithTimeout(
-    url: string,
-    init: RequestInit
-  ): Promise<Response> {
-    const controller = new AbortController()
-    const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT)
-
-    try {
-      return await fetch(url, { ...init, signal: controller.signal })
-    } catch (err) {
-      if (err instanceof DOMException && err.name === 'AbortError') {
-        throw new Error('GROQ TIMEOUT: REQUEST EXCEEDED 30S')
-      }
-      throw err
-    } finally {
-      clearTimeout(timeout)
     }
   }
 }

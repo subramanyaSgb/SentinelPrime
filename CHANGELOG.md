@@ -1,5 +1,55 @@
 # SentinelPrime Changelog
 
+## [5.1.0] — 2026-03-23
+
+### Module: AI_PROVIDER_FIX + API_INTEGRATION
+**Status:** 🧪 TESTING
+
+#### Summary:
+Fixed critical AI provider CORS issue by adding server-side proxy (Vercel Edge Function + Vite dev middleware). All AI providers now route through /api/ai-proxy to bypass browser CORS restrictions. Enhanced GenericModuleExecutor with real API integrations for 8+ free OSINT APIs. Fixed all TypeScript errors across the codebase (zero errors).
+
+#### Files Created:
+- `api/ai-proxy.ts` — Vercel Edge Function for proxying AI API calls (domain-whitelisted)
+- `src/providers/proxyFetch.ts` — Proxy fetch utility with automatic CORS detection and fallback
+- `src/services/osintApis.ts` — Real OSINT API integrations (ip-api, crt.sh, URLhaus, Wayback, GDELT, Reddit, Gravatar, DNS)
+- `vercel.json` — Vercel deployment configuration with API rewrites
+
+#### Files Modified:
+- `src/providers/NvidiaProvider.ts` — Now uses proxyFetch for CORS-safe requests
+- `src/providers/GroqProvider.ts` — Now uses proxyFetch for CORS-safe requests
+- `src/providers/OpenRouterProvider.ts` — Now uses proxyFetch for CORS-safe requests
+- `src/providers/GeminiProvider.ts` — Updated to use shared fetchWithTimeout
+- `src/providers/OllamaProvider.ts` — Updated to use shared fetchWithTimeout
+- `src/components/modules/GenericModuleExecutor.tsx` — Added real API calls, enhanced results display
+- `vite.config.ts` — Added AI proxy middleware plugin for dev server
+- `src/components/globe/FlightPaths.tsx` — Fixed TS2339 dashOffset, TS2345 Vector3 undefined, TS2322 line ref
+- `src/components/globe/Globe.tsx` — Fixed TS2345 undefined texture URL
+- `src/components/globe/InvestigationSpotlight.tsx` — Fixed TS18048 uniforms possibly undefined
+- `src/components/globe/ThreatHeatmap.tsx` — Fixed TS18048 uniforms possibly undefined
+- `src/components/modules/person/MetadataExtractor.tsx` — Fixed TS6133 unused Button import
+- `src/components/settings/AIPreferencesTab.tsx` — Fixed TS6133 unused Button, TS2322 StatusType
+
+#### TypeScript Status:
+- **ZERO ERRORS** (previously 9+ errors in globe, metadata, AI preferences)
+
+#### AI Provider CORS Fix:
+- Root cause: NVIDIA, Groq, OpenRouter APIs block browser CORS requests
+- Solution: Server-side proxy (Edge Function in prod, Vite middleware in dev)
+- Browser → /api/ai-proxy → AI Provider API → streaming response back
+- Domain whitelist prevents proxy abuse
+
+#### OSINT API Integrations:
+- ip-api.com (IP geolocation — free, CORS-enabled)
+- crt.sh (Certificate transparency — free, CORS-enabled)
+- URLhaus / abuse.ch (Malicious URL lookup — free)
+- Archive.org CDX (Wayback Machine snapshots — free)
+- GDELT (Global news/events database — free)
+- Reddit (Public user profile data — free)
+- Gravatar (Email-linked profile — free)
+- dns.google (DNS record lookup — free, CORS-enabled)
+
+---
+
 ## [5.0.0] — 2026-03-23
 
 ### Module: AI_ANALYST_SYNTHESIS (Phase 5 Complete)

@@ -1,6 +1,6 @@
 import { useSettingsStore } from '@/store/settingsStore'
 import { useAppStore } from '@/store/appStore'
-import { Button, Input, StatusIndicator, Separator } from '@/components/ui'
+import { Input, StatusIndicator, Separator } from '@/components/ui'
 import type { AIProviderType } from '@/types'
 
 /**
@@ -144,7 +144,7 @@ export function AIPreferencesTab() {
                   </div>
                 </div>
               </div>
-              <StatusIndicator status={statusMap[p.status]} />
+              <StatusIndicator status={statusMap[p.status] ?? 'unused'} />
             </button>
           )
         })}
