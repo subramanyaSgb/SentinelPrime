@@ -1,9 +1,49 @@
 # SentinelPrime Changelog
 
+## [0.3.0] — 2026-03-23
+
+### Module: APP_SHELL_LAYOUT
+**Status:** 🧪 TESTING
+
+#### Files Created:
+- `src/components/hud/Header.tsx` — HUD header with SENTINEL//PRIME branding, live UTC clock, classification line, system status indicator
+- `src/components/hud/Footer.tsx` — Status bar with live target count, alert count, API status, uptime counter, memory display (via Performance API)
+- `src/components/panels/LeftPanel.tsx` — Intelligence Navigator with 6 nav items, collapse toggle (280px/48px), active targets list
+- `src/components/panels/RightPanel.tsx` — Context Engine (360px/0px), header with active tool context, close button, empty state, side toggle button
+- `src/components/panels/CenterContent.tsx` — View router placeholder with view-specific icons, titles, descriptions for all 8 AppViews
+
+#### Files Modified:
+- `src/App.tsx` — Complete refactor: extracted Header/Footer/Panels into components, added IndexedDB data loading on mount, clean composition of all layout pieces
+
+#### Decisions Made:
+- Header and Footer are standalone components (no props) — they read from Zustand stores directly
+- Left panel nav uses AppView type for type-safe navigation
+- Left panel shows up to 8 active targets in sidebar (truncated names)
+- Right panel uses children prop for content injection (future flexibility)
+- RightPanelToggle is a separate component positioned absolutely on main area edge
+- CenterContent renders view placeholder per current AppView — real views built in later phases
+- Memory display uses Performance.memory API (Chrome-only, graceful fallback)
+- Panel collapse uses cubic-bezier(0.2, 0, 0, 1) "mechanical snap" per PRD Section 6.10
+- IndexedDB targets and alerts loaded on app mount via useEffect
+
+#### Tests Passed:
+- [x] All TypeScript strict checks pass
+- [x] No console statements
+- [x] All colors use CSS variables
+- [x] All imports resolve correctly
+- [x] No unused imports or variables
+- [x] Proper hook cleanup (intervals, timeouts)
+- [x] Zustand store selectors used correctly
+
+#### Known Issues:
+- Cannot verify runtime rendering in sandbox — user must test locally
+
+---
+
 ## [0.2.0] — 2026-03-23
 
 ### Module: PHANTOM_GRID_DESIGN_SYSTEM
-**Status:** 🧪 TESTING
+**Status:** ✅ USER APPROVED
 
 #### Files Created:
 - `src/components/ui/Panel.tsx` — Panel + PanelHeader with corner brackets, title, subtitle
