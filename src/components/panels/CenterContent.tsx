@@ -3,6 +3,7 @@ import { SettingsView } from '@/components/settings'
 import { GlobeLoader } from '@/components/globe'
 import { TargetsView } from '@/components/target'
 import { ToolsView } from '@/components/modules/ToolsView'
+import { IntelligenceView, VisualizationsView } from '@/components/ai'
 import type { AppView } from '@/types'
 
 /**
@@ -27,6 +28,10 @@ export function CenterContent() {
         <TargetsView initialView="detail" />
       ) : currentView === 'tools' || currentView === 'tool-detail' ? (
         <ToolsView />
+      ) : currentView === 'intelligence' ? (
+        <IntelligenceView />
+      ) : currentView === 'visualizations' ? (
+        <VisualizationsView />
       ) : (
         <ViewPlaceholder view={currentView} />
       )}

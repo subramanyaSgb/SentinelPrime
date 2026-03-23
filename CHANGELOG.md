@@ -1,5 +1,68 @@
 # SentinelPrime Changelog
 
+## [5.0.0] — 2026-03-23
+
+### Module: AI_ANALYST_SYNTHESIS (Phase 5 Complete)
+**Status:** 🧪 TESTING
+
+#### Sub-modules:
+- **5.1 AI Chat Interface** — Per-target AI chat with streaming, context injection, conversation history
+- **5.2 Cross-Module Synthesis** — AI-powered synthesis across all target data, structured output parsing
+- **5.3 Intel Report Generator** — ASCII-formatted intelligence reports with copy/download
+- **5.4 Timeline Builder** — Chronological event timeline with auto-populate and manual entry
+- **5.5 Relationship Mapper** — Text-based relationship graph (nodes/edges from shared identifiers/aliases/tags)
+- **5.6 Confidence Scoring Engine** — Multi-factor confidence calculation and visual display
+- **5.7 Alias Correlation Engine** — Cross-target alias/identifier/name correlation with strength scoring
+
+#### Files Created:
+- `src/components/ai/AIChatInterface.tsx` — AI chat with streaming, target context, conversation history
+- `src/components/ai/CrossModuleSynthesis.tsx` — Cross-module AI synthesis with structured output
+- `src/components/ai/IntelReportGenerator.tsx` — Formatted intelligence report generation
+- `src/components/ai/TimelineBuilder.tsx` — Chronological event timeline with manual entry
+- `src/components/ai/RelationshipMapper.tsx` — Text-based relationship visualization
+- `src/components/ai/ConfidenceScorer.tsx` — Confidence score display and calculation
+- `src/components/ai/AliasCorrelator.tsx` — Cross-target alias correlation engine
+- `src/components/ai/IntelligenceView.tsx` — Intelligence Center container (chat, synthesis, reports, correlation)
+- `src/components/ai/VisualizationsView.tsx` — Visualizations container (relationships, timeline, confidence)
+- `src/components/ai/index.ts` — Barrel export for all AI components
+
+#### Files Modified:
+- `src/components/panels/CenterContent.tsx` — Added routing for intelligence and visualizations views
+
+#### Decisions Made:
+- Text-based relationship graph used instead of D3.js for Phase 5 (D3.js deferred to polish phase)
+- Cross-module synthesis uses AI streaming with structured response parsing
+- Intelligence and Visualizations are separate nav views with tabbed sub-views
+- Confidence scoring uses multi-factor approach (data presence, sources, AI analysis, tags, target linkage)
+
+#### Tests Passed:
+- [x] TypeScript clean (zero errors in ai/ components)
+- [x] All components properly typed with interfaces
+- [x] No console errors in component code
+- [x] Proper error states with PHANTOM GRID styling
+- [x] Loading states with cursor blink animation
+- [x] AI provider integration via settingsStore
+
+#### Known Issues:
+- D3.js full graph visualization deferred to polish phase
+- AI streaming depends on configured provider (NVIDIA bundled key available as default)
+
+---
+
+## [4.0.0] — 2026-03-23
+
+### Module: CORE_INTELLIGENCE_MODULES (Phase 4 Complete)
+**Status:** 🧪 TESTING
+
+---
+
+## [3.0.0] — 2026-03-23
+
+### Module: TARGET_MANAGER (Phase 3 Complete)
+**Status:** ✅ USER APPROVED
+
+---
+
 ## [2.0.0] — 2026-03-23
 
 ### Module: AI_PROVIDER_SYSTEM (Phase 2 Complete)
