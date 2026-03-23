@@ -168,29 +168,57 @@ export class NvidiaProvider implements AIProvider {
 
   async checkHealth(): Promise<AIHealthResult> {
     const start = performance.now()
+    const controller = new AbortController()
+    // 10s timeout for health checks (shorter than generation timeout)
+    const timeout = setTimeout(() => controller.abort(), 10000)
+
     try {
-      const response = await this.fetchWithTimeout(`${this.baseUrl}/models`, {
-        method: 'GET',
+      // Use /chat/completions (not /models) — more likely to have CORS headers
+      // for browser-based apps. max_tokens=1 keeps response near-instant.
+      const response = await fetch(`${this.baseUrl}/chat/completions`, {
+        method: 'POST',
         headers: this.buildHeaders(),
+        body: JSON.stringify({
+          model: this.model,
+          messages: [{ role: 'user', content: 'ping' }],
+          max_tokens: 1,
+          temperature: 0,
+          stream: false,
+        }),
+        signal: controller.signal,
       })
 
       const latencyMs = Math.round(performance.now() - start)
 
-      // Even 401 means endpoint is reachable
-      if (response.ok || response.status === 401) {
+      if (response.ok) {
         return { ok: true, latencyMs, model: this.model }
       }
 
+      // 429 = rate limited — API key is valid, endpoint is reachable
+      if (response.status === 429) {
+        return { ok: true, latencyMs, model: this.model }
+      }
+
+      const errorText = await response.text().catch(() => '')
       return {
         ok: false,
         latencyMs,
-        error: `API RETURNED ${String(response.status)}`,
+        error: `HTTP_${String(response.status)}: ${errorText.slice(0, 80) || 'CHECK API KEY'}`,
         model: this.model,
       }
     } catch (err) {
       const latencyMs = Math.round(performance.now() - start)
+      if (err instanceof DOMException && err.name === 'AbortError') {
+        return { ok: false, latencyMs, error: 'HEALTH_CHECK_TIMEOUT: 10S', model: this.model }
+      }
       const message = err instanceof Error ? err.message : 'UNKNOWN ERROR'
-      return { ok: false, latencyMs, error: message, model: this.model }
+      // "Failed to fetch" typically means CORS or network error in the browser
+      const errorMsg = message.toLowerCase().includes('fetch')
+        ? 'CORS/NETWORK_ERROR: CHECK BROWSER CONSOLE'
+        : message.toUpperCase()
+      return { ok: false, latencyMs, error: errorMsg, model: this.model }
+    } finally {
+      clearTimeout(timeout)
     }
   }
 

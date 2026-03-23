@@ -185,13 +185,14 @@ function EarthGroup({ isInteracting, markers, onMarkerClick, layers }: EarthGrou
           />
         </mesh>
       ) : (
+        /* Wireframe fallback — phosphor green so it's visible against --bg-void */
         <mesh>
-          <sphereGeometry args={[2, 64, 64]} />
-          <meshStandardMaterial
-            color={new THREE.Color(0x020802)}
-            emissive={new THREE.Color(0x002208)}
-            emissiveIntensity={0.3}
+          <sphereGeometry args={[2, 32, 32]} />
+          <meshBasicMaterial
+            color={new THREE.Color(0x00ff41)}
             wireframe
+            transparent
+            opacity={0.35}
           />
         </mesh>
       )}
@@ -503,7 +504,7 @@ function GlobeHUD() {
         }}
       >
         <span style={{ color: 'var(--phosphor)' }} className="text-glow">
-          ◎
+          📡
         </span>{' '}
         MISSION CONTROL // GLOBAL OVERVIEW
       </div>

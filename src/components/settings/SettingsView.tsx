@@ -10,11 +10,11 @@ import { DisplayTab } from './DisplayTab'
 type SettingsTab = 'api-keys' | 'ai-preferences' | 'opsec' | 'data' | 'display'
 
 const TABS: { id: SettingsTab; label: string; icon: string }[] = [
-  { id: 'api-keys', label: 'API KEYS', icon: '◈' },
-  { id: 'ai-preferences', label: 'AI PREFERENCES', icon: '◆' },
-  { id: 'opsec', label: 'OPSEC CONFIG', icon: '◉' },
-  { id: 'data', label: 'DATA MANAGEMENT', icon: '▦' },
-  { id: 'display', label: 'DISPLAY', icon: '◇' },
+  { id: 'api-keys', label: 'API KEYS', icon: '🔑' },
+  { id: 'ai-preferences', label: 'AI PREFERENCES', icon: '🤖' },
+  { id: 'opsec', label: 'OPSEC CONFIG', icon: '🛡️' },
+  { id: 'data', label: 'DATA MANAGEMENT', icon: '💾' },
+  { id: 'display', label: 'DISPLAY', icon: '🖥️' },
 ]
 
 /**

@@ -159,6 +159,39 @@ function getArcHeight(
 }
 
 // ═══════════════════════════════════════════════════════════════
+//  AIRPLANE EMOJI TEXTURE — singleton, created once per session
+// ═══════════════════════════════════════════════════════════════
+
+let _planeTexture: THREE.CanvasTexture | null = null
+
+/**
+ * Returns a shared CanvasTexture with ✈ emoji rendered on it.
+ * Cached after first call to avoid recreating per-route.
+ */
+function getPlaneTexture(): THREE.CanvasTexture {
+  if (!_planeTexture) {
+    const canvas = document.createElement('canvas')
+    canvas.width = 64
+    canvas.height = 64
+    const ctx = canvas.getContext('2d')
+    if (ctx) {
+      ctx.clearRect(0, 0, 64, 64)
+      // Draw a tinted ✈ emoji — visible on dark backgrounds
+      ctx.font = '44px serif'
+      ctx.textAlign = 'center'
+      ctx.textBaseline = 'middle'
+      // Green shadow for phosphor glow effect
+      ctx.shadowColor = '#00ff41'
+      ctx.shadowBlur = 8
+      ctx.fillStyle = '#00ff41'
+      ctx.fillText('✈', 32, 32)
+    }
+    _planeTexture = new THREE.CanvasTexture(canvas)
+  }
+  return _planeTexture
+}
+
+// ═══════════════════════════════════════════════════════════════
 //  SINGLE FLIGHT PATH
 // ═══════════════════════════════════════════════════════════════
 
@@ -171,11 +204,14 @@ interface FlightPathProps {
  *
  * Renders:
  * 1. A dashed line arc (the path)
- * 2. An animated dot flowing along the arc (the aircraft)
+ * 2. An airplane ✈ sprite flowing along the arc (billboard — always faces camera)
  */
 function FlightPath({ route }: FlightPathProps) {
-  const dotRef = useRef<THREE.Mesh>(null)
+  const planeRef = useRef<THREE.Sprite>(null)
   const lineRef = useRef<THREE.Line>(null)
+
+  // Shared airplane emoji texture
+  const planeTexture = useMemo(() => getPlaneTexture(), [])
 
   const arcHeight = useMemo(
     () => getArcHeight(route.from, route.to),
@@ -191,7 +227,7 @@ function FlightPath({ route }: FlightPathProps) {
     return new THREE.BufferGeometry().setFromPoints(arcPoints)
   }, [arcPoints])
 
-  // Animate the dash offset to create flowing effect + move dot along arc
+  // Animate the dash offset to create flowing effect + move plane along arc
   useFrame(({ clock }) => {
     const t = clock.getElapsedTime()
 
@@ -201,8 +237,8 @@ function FlightPath({ route }: FlightPathProps) {
       material.dashOffset = -t * route.speed * 10
     }
 
-    // Move aircraft dot along the arc
-    if (dotRef.current && arcPoints.length > 0) {
+    // Move airplane sprite along the arc
+    if (planeRef.current && arcPoints.length > 0) {
       const progress = (t * route.speed) % 1 // 0 → 1, repeating
       const index = Math.floor(progress * (arcPoints.length - 1))
       const nextIndex = Math.min(index + 1, arcPoints.length - 1)
@@ -214,7 +250,7 @@ function FlightPath({ route }: FlightPathProps) {
         arcPoints[nextIndex],
         frac
       )
-      dotRef.current.position.copy(pos)
+      planeRef.current.position.copy(pos)
     }
   })
 
@@ -255,15 +291,15 @@ function FlightPath({ route }: FlightPathProps) {
         />
       </line>
 
-      {/* Aircraft dot — flows along the arc */}
-      <mesh ref={dotRef}>
-        <sphereGeometry args={[0.015, 6, 6]} />
-        <meshBasicMaterial
-          color={new THREE.Color(0x00ff41)}
+      {/* ✈ Airplane sprite — billboard facing camera, flows along arc */}
+      <sprite ref={planeRef} scale={[0.14, 0.14, 0.14]}>
+        <spriteMaterial
+          map={planeTexture}
           transparent
-          opacity={0.8}
+          depthTest={false}
+          sizeAttenuation
         />
-      </mesh>
+      </sprite>
     </group>
   )
 }

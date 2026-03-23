@@ -19,12 +19,12 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { id: 'dashboard', label: 'MISSION CONTROL', icon: '◎' },
-  { id: 'targets', label: 'TARGETS', icon: '◈' },
-  { id: 'tools', label: 'TOOLS', icon: '▶' },
-  { id: 'intelligence', label: 'INTELLIGENCE', icon: '◆' },
-  { id: 'visualizations', label: 'VISUALIZATIONS', icon: '◇' },
-  { id: 'settings', label: 'SETTINGS', icon: '⚙' },
+  { id: 'dashboard', label: 'MISSION CONTROL', icon: '🌐' },
+  { id: 'targets', label: 'TARGETS', icon: '🎯' },
+  { id: 'tools', label: 'TOOLS', icon: '🔍' },
+  { id: 'intelligence', label: 'INTELLIGENCE', icon: '🧠' },
+  { id: 'visualizations', label: 'VISUALIZATIONS', icon: '📊' },
+  { id: 'settings', label: 'SETTINGS', icon: '⚙️' },
 ]
 
 export function LeftPanel() {

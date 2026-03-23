@@ -40,27 +40,27 @@ export function Footer() {
       }}
     >
       <div className="flex items-center gap-4">
-        <span>◈ TARGETS: {activeTargetCount} ACTIVE</span>
+        <span>🎯 TARGETS: {activeTargetCount} ACTIVE</span>
         <span
           style={{
             color: unreadCount > 0 ? 'var(--amber)' : 'var(--phosphor-dim)',
           }}
         >
-          ⚠ ALERTS: {unreadCount} NEW
+          ⚠️ ALERTS: {unreadCount} NEW
         </span>
         <span
           style={{
             color: validCount > 0 ? 'var(--phosphor)' : 'var(--phosphor-dim)',
           }}
         >
-          API: {statusDots} {validCount}/{totalProviders} ONLINE
+          🤖 API: {statusDots} {validCount}/{totalProviders} ONLINE
         </span>
         <span
           style={{
             color: isOnline ? 'var(--phosphor)' : 'var(--red-critical)',
           }}
         >
-          {isOnline ? '● NETWORK: ONLINE' : '● NETWORK: OFFLINE'}
+          {isOnline ? '🌐 NETWORK: ONLINE' : '🌐 NETWORK: OFFLINE'}
         </span>
       </div>
       <div className="flex items-center gap-4">
