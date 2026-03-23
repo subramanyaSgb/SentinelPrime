@@ -17,6 +17,7 @@
   --phosphor-dim: #00AA2B;
   --phosphor-faint: rgba(0, 255, 65, 0.15);
   --phosphor-glow: rgba(0, 255, 65, 0.4);
+  --phosphor-muted: rgba(0, 255, 65, 0.3);
 
   /* Warning — Amber */
   --amber: #FFB700;

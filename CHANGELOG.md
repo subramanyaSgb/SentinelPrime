@@ -1,5 +1,53 @@
 # SentinelPrime Changelog
 
+## [0.2.0] — 2026-03-23
+
+### Module: PHANTOM_GRID_DESIGN_SYSTEM
+**Status:** 🧪 TESTING
+
+#### Files Created:
+- `src/components/ui/Panel.tsx` — Panel + PanelHeader with corner brackets, title, subtitle
+- `src/components/ui/Button.tsx` — Button with default/primary/danger/ghost variants, icon support
+- `src/components/ui/Input.tsx` — Input with >_ prefix + TextArea, both with label/error states
+- `src/components/ui/Card.tsx` — Card with corner brackets, title/meta header, action bar
+- `src/components/ui/ProgressBar.tsx` — ASCII progress bar (████░░) + ThreatLevel auto-color component
+- `src/components/ui/StatusIndicator.tsx` — Status dots (●/○) + APIStatusBar (●●●○ 3/4 ONLINE)
+- `src/components/ui/TypewriterText.tsx` — Single-line (18ms/char) + multi-line TypewriterBlock
+- `src/components/ui/Display.tsx` — Label, Value, Separator, Timestamp, MetaRow, DataField
+- `src/components/ui/ErrorDisplay.tsx` — PHANTOM GRID error card + RateLimitDisplay
+- `src/components/ui/Overlays.tsx` — ScanlineOverlay, CRTVignette, NoiseOverlay (SVG feTurbulence), CriticalPulse
+- `src/components/ui/Loading.tsx` — Loading (>_ SCANNING...), AIThinking (● ● ●), ScanningCursor
+- `src/components/ui/index.ts` — Barrel export for all 26 UI components
+
+#### Files Modified:
+- `src/styles/phantom-grid.css` — Added --phosphor-muted variable, criticalPulse/errorStatic/amberFlash keyframes
+- `src/App.tsx` — Replaced raw divs with ScanlineOverlay, CRTVignette, NoiseOverlay components
+- `src/store/alertStore.ts` — Removed unused AlertSeverity import (TypeScript strict fix)
+
+#### Decisions Made:
+- All UI primitives are pure presentational components (no state management)
+- Overlays use fixed positioning with aria-hidden for accessibility
+- SVG feTurbulence used for noise grain (no external image dependency)
+- TypewriterText speed defaults to 18ms per PRD spec, configurable via prop
+- ThreatLevel auto-colors: 0-30 phosphor, 31-60 amber, 61-100 red
+- Added --phosphor-muted CSS variable for muted text (was hardcoded rgba)
+- forwardRef used on Input/TextArea for future form integration
+
+#### Tests Passed:
+- [x] No `any` types in any component
+- [x] All props have TypeScript interfaces
+- [x] No console statements
+- [x] All colors use CSS variables
+- [x] All imports use @/ path alias correctly
+- [x] Barrel export matches all component files
+- [x] Unused import fixed (alertStore)
+
+#### Known Issues:
+- Cannot verify runtime rendering without npm install (sandbox limitation)
+- Overlays use inline styles for positioning (by design — these are fixed elements)
+
+---
+
 ## [0.1.0] — 2026-03-23
 
 ### Module: PROJECT_SCAFFOLD

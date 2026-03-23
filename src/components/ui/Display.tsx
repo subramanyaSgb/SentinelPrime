@@ -39,7 +39,7 @@ export function Value({ children, className = '', variant = 'default' }: ValuePr
     default: 'var(--white-data)',
     amber: 'var(--amber)',
     red: 'var(--red-critical)',
-    muted: 'rgba(0,255,65,0.3)',
+    muted: 'var(--phosphor-muted)',
   }
 
   return (
@@ -74,7 +74,7 @@ export function Timestamp({ date, className = '' }: TimestampProps) {
   return (
     <span
       className={className}
-      style={{ fontSize: '10px', color: 'rgba(0,255,65,0.3)' }}
+      style={{ fontSize: '10px', color: 'var(--phosphor-muted)' }}
     >
       {y}-{m}-{d} // {h}:{min}:{s} UTC
     </span>
