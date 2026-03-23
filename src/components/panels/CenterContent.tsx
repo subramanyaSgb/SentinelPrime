@@ -2,6 +2,7 @@ import { useAppStore } from '@/store/appStore'
 import { SettingsView } from '@/components/settings'
 import { GlobeLoader } from '@/components/globe'
 import { TargetsView } from '@/components/target'
+import { ToolsView } from '@/components/modules/ToolsView'
 import type { AppView } from '@/types'
 
 /**
@@ -24,6 +25,8 @@ export function CenterContent() {
         <TargetsView initialView="list" />
       ) : currentView === 'target-detail' ? (
         <TargetsView initialView="detail" />
+      ) : currentView === 'tools' || currentView === 'tool-detail' ? (
+        <ToolsView />
       ) : (
         <ViewPlaceholder view={currentView} />
       )}
