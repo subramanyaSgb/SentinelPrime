@@ -1,9 +1,57 @@
 # SentinelPrime Changelog
 
+## [0.4.0] — 2026-03-23
+
+### Module: SETTINGS_PAGE
+**Status:** ✅ USER APPROVED
+
+#### Files Created:
+- `src/store/settingsStore.ts` — Zustand settings store: provider configs (5 providers), display toggles, OpSec settings, data management, localStorage persistence with load/save
+- `src/components/settings/SettingsView.tsx` — Main settings view with 5-tab sidebar navigation (API Keys, AI Preferences, OpSec Config, Data Management, Display), tab routing
+- `src/components/settings/APIKeysTab.tsx` — API key management for all 5 providers: masked key display, save/show/hide/clear actions, health check pings, status indicators, NVIDIA bundled key notice, Ollama local notice
+- `src/components/settings/AIPreferencesTab.tsx` — Provider selection radio buttons, active provider display, model/base URL configuration per provider, NVIDIA Nemotron feature info
+- `src/components/settings/OpSecTab.tsx` — Toggle switches for proxy routing, metadata stripping, chain of custody, timestamp verification; anti-forensics checklist; OpSec advisory notice
+- `src/components/settings/DataManagementTab.tsx` — Auto-save toggle, retention days config, export format selection (JSON/CSV), full data export to file, database stats query, danger zone with purge confirmation
+- `src/components/settings/DisplayTab.tsx` — Toggle switches for all 6 visual effects (scanlines, CRT vignette, noise, boot sequence, typewriter, glow), live preview area
+- `src/components/settings/index.ts` — Barrel export for all settings components
+
+#### Files Modified:
+- `src/App.tsx` — Added useSettingsStore import, loadSettings() on mount, display overlay toggles now controlled by settings store (scanlines/crtVignette/noiseOverlay conditional rendering)
+- `src/components/panels/CenterContent.tsx` — Added SettingsView import, routing: settings view renders SettingsView component, all other views show placeholder
+
+#### Decisions Made:
+- Settings store uses localStorage for persistence (per PRD 13.1 — API keys in LocalStorage)
+- Provider configs merged with defaults on load (future-proof for adding new providers)
+- NVIDIA Nemotron shows "BUNDLED API KEY" notice — no user input needed
+- Ollama shows "LOCAL PROVIDER" notice — no API key required
+- Health check uses basic fetch to provider's /models endpoint with 10s timeout
+- Display toggles immediately affect the main App overlays via Zustand reactivity
+- Danger zone requires 2-click confirmation before purging all IndexedDB data
+- Data export generates timestamped JSON file with all 6 database tables
+- Toggle switches use custom PHANTOM GRID styled divs (no native checkbox)
+
+#### Tests Passed:
+- [x] TypeScript: all types correct, no `any` usage
+- [x] All colors use CSS variables (no hardcoded colors)
+- [x] All text uppercase where required
+- [x] No console.log statements
+- [x] All imports resolve correctly with @/ alias
+- [x] Zustand selectors used correctly (no full-store subscriptions)
+- [x] localStorage read/write has try/catch error handling
+- [x] Health check has AbortController timeout
+- [x] All async operations properly void-wrapped
+- [x] Settings load on mount in both SettingsView and App
+
+#### Known Issues:
+- Cannot verify runtime rendering in sandbox — user must test locally
+- Health check is basic (fetch to /models) — full provider validation in Phase 2
+
+---
+
 ## [0.3.0] — 2026-03-23
 
 ### Module: APP_SHELL_LAYOUT
-**Status:** 🧪 TESTING
+**Status:** ✅ USER APPROVED
 
 #### Files Created:
 - `src/components/hud/Header.tsx` — HUD header with SENTINEL//PRIME branding, live UTC clock, classification line, system status indicator

@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { useAppStore } from '@/store/appStore'
 import { useTargetStore } from '@/store/targetStore'
 import { useAlertStore } from '@/store/alertStore'
+import { useSettingsStore } from '@/store/settingsStore'
 import { ScanlineOverlay, CRTVignette, NoiseOverlay } from '@/components/ui'
 import { Header } from '@/components/hud/Header'
 import { Footer } from '@/components/hud/Footer'
@@ -14,12 +15,15 @@ function App() {
   const setBootComplete = useAppStore((s) => s.setBootComplete)
   const loadTargets = useTargetStore((s) => s.loadTargets)
   const loadAlerts = useAlertStore((s) => s.loadAlerts)
+  const loadSettings = useSettingsStore((s) => s.loadSettings)
+  const display = useSettingsStore((s) => s.display)
 
-  // Load data from IndexedDB on mount
+  // Load data from IndexedDB and settings on mount
   useEffect(() => {
     void loadTargets()
     void loadAlerts()
-  }, [loadTargets, loadAlerts])
+    loadSettings()
+  }, [loadTargets, loadAlerts, loadSettings])
 
   // Boot sequence check
   useEffect(() => {
@@ -45,10 +49,10 @@ function App() {
       className="h-screen w-screen overflow-hidden flex flex-col"
       style={{ background: 'var(--bg-void)' }}
     >
-      {/* Visual effect overlays */}
-      <ScanlineOverlay />
-      <CRTVignette />
-      <NoiseOverlay />
+      {/* Visual effect overlays — controlled by display settings */}
+      {display.scanlines && <ScanlineOverlay />}
+      {display.crtVignette && <CRTVignette />}
+      {display.noiseOverlay && <NoiseOverlay />}
 
       {/* HUD Header */}
       <Header />

@@ -1,10 +1,10 @@
 import { useAppStore } from '@/store/appStore'
+import { SettingsView } from '@/components/settings'
 import type { AppView } from '@/types'
 
 /**
  * Center content area — renders the active view.
- * This is a routing placeholder; each view will be built in its own phase.
- * For now, shows the view name and a placeholder message.
+ * Implemented views render their full component; others show placeholders.
  */
 export function CenterContent() {
   const currentView = useAppStore((s) => s.currentView)
@@ -14,7 +14,11 @@ export function CenterContent() {
       className="flex-1 flex flex-col overflow-hidden relative"
       style={{ background: 'var(--bg-void)' }}
     >
-      <ViewPlaceholder view={currentView} />
+      {currentView === 'settings' ? (
+        <SettingsView />
+      ) : (
+        <ViewPlaceholder view={currentView} />
+      )}
     </div>
   )
 }
