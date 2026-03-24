@@ -1,5 +1,5 @@
 import type { AIProvider, AIProviderType, AIHealthResult } from '@/types'
-import { fetchWithTimeout } from './proxyFetch'
+import { proxyFetch } from './proxyFetch'
 
 /**
  * Google Gemini Provider — CLOUD AI FALLBACK.
@@ -9,7 +9,7 @@ import { fetchWithTimeout } from './proxyFetch'
  *
  * Note: Gemini uses a different API format than OpenAI-compatible providers.
  * API key is passed as a URL parameter, not a Bearer token.
- * Gemini's API supports CORS natively — no proxy needed.
+ * Routes through /api/ai-proxy to avoid CORS blocking in the browser.
  */
 
 const DEFAULT_GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta'
@@ -47,7 +47,7 @@ export class GeminiProvider implements AIProvider {
     const url = `${this.baseUrl}/models/${this.model}:generateContent?key=${this.apiKey}`
     const contents = this.buildContents(prompt, system)
 
-    const response = await fetchWithTimeout(url, {
+    const response = await proxyFetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -58,7 +58,8 @@ export class GeminiProvider implements AIProvider {
           maxOutputTokens: 8192,
         },
       }),
-    }, REQUEST_TIMEOUT)
+      timeout: REQUEST_TIMEOUT,
+    })
 
     if (!response.ok) {
       const errorText = await response.text().catch(() => 'UNKNOWN ERROR')
@@ -86,7 +87,7 @@ export class GeminiProvider implements AIProvider {
     const url = `${this.baseUrl}/models/${this.model}:streamGenerateContent?key=${this.apiKey}&alt=sse`
     const contents = this.buildContents(prompt, system)
 
-    const response = await fetchWithTimeout(url, {
+    const response = await proxyFetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -97,7 +98,8 @@ export class GeminiProvider implements AIProvider {
           maxOutputTokens: 8192,
         },
       }),
-    }, REQUEST_TIMEOUT)
+      timeout: REQUEST_TIMEOUT,
+    })
 
     if (!response.ok) {
       const errorText = await response.text().catch(() => 'UNKNOWN ERROR')
@@ -165,7 +167,7 @@ export class GeminiProvider implements AIProvider {
     const start = performance.now()
     try {
       const url = `${this.baseUrl}/models?key=${this.apiKey}`
-      const response = await fetchWithTimeout(url, { method: 'GET' }, 10000)
+      const response = await proxyFetch(url, { method: 'GET', timeout: 10000 })
 
       const latencyMs = Math.round(performance.now() - start)
 

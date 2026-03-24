@@ -15,8 +15,9 @@ export const config = {
 interface ProxyRequest {
   targetUrl: string
   headers: Record<string, string>
-  body: string
+  body?: string
   stream: boolean
+  method?: string
 }
 
 export default async function handler(request: Request): Promise<Response> {
@@ -70,10 +71,11 @@ export default async function handler(request: Request): Promise<Response> {
     }
 
     // Forward request to AI provider
+    const upstreamMethod = (proxyReq.method ?? 'POST').toUpperCase()
     const upstreamResponse = await fetch(proxyReq.targetUrl, {
-      method: 'POST',
+      method: upstreamMethod,
       headers: proxyReq.headers ?? {},
-      body: proxyReq.body,
+      body: upstreamMethod === 'GET' || upstreamMethod === 'HEAD' ? undefined : proxyReq.body,
     })
 
     if (!upstreamResponse.ok) {

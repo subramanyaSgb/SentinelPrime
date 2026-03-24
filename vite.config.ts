@@ -41,8 +41,9 @@ function aiProxyPlugin(): Plugin {
           const proxyReq = JSON.parse(bodyStr) as {
             targetUrl: string
             headers: Record<string, string>
-            body: string
+            body?: string
             stream: boolean
+            method?: string
           }
 
           if (!proxyReq.targetUrl) {
@@ -52,10 +53,11 @@ function aiProxyPlugin(): Plugin {
           }
 
           // Forward to AI provider
+          const upstreamMethod = (proxyReq.method ?? 'POST').toUpperCase()
           const upstreamRes = await fetch(proxyReq.targetUrl, {
-            method: 'POST',
+            method: upstreamMethod,
             headers: proxyReq.headers ?? {},
-            body: proxyReq.body,
+            body: upstreamMethod === 'GET' || upstreamMethod === 'HEAD' ? undefined : proxyReq.body,
           })
 
           if (!upstreamRes.ok) {

@@ -18,6 +18,7 @@ function shouldProxy(url: string): boolean {
     'integrate.api.nvidia.com',
     'api.groq.com',
     'openrouter.ai',
+    'generativelanguage.googleapis.com',
   ]
 
   try {
@@ -50,6 +51,7 @@ export async function proxyFetch(
   // Try proxy first for CORS-blocked domains
   if (shouldProxy(url)) {
     try {
+      const upstreamMethod = (init.method ?? 'POST').toUpperCase()
       const proxyResponse = await fetchWithTimeout(
         PROXY_ENDPOINT,
         {
@@ -58,8 +60,9 @@ export async function proxyFetch(
           body: JSON.stringify({
             targetUrl: url,
             headers: extractHeaders(init.headers),
-            body: init.body as string,
+            body: init.body as string | undefined,
             stream: isStream,
+            method: upstreamMethod,
           }),
         },
         init.timeout ?? 30000
